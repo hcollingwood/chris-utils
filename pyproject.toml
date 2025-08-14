@@ -13,7 +13,7 @@
 # limitations under the License.
 
 [project]
-name = "eo-sip-converter"
+name = "chris-utils"
 version = "0.0.1"
 description = "Utilities for use with CHRIS"
 readme = "README.md"
@@ -39,7 +39,7 @@ classifiers = [
   "License :: Other/Proprietary License",
 
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3 :: Only",
 ]
 
