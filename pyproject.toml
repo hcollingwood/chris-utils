@@ -44,7 +44,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "crc16",
     "pydantic_xml",
     "lxml",
     "xarray[io]",

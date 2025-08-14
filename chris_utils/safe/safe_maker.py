@@ -1,11 +1,8 @@
 import binascii
-import hashlib
 import os
 import argparse
 import logging
 import shutil
-
-import crc16
 
 from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
 from chris_utils.safe.safe_metadata_xml_generator import XFDU
