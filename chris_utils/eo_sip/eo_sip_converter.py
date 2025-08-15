@@ -284,7 +284,7 @@ def generate_file_name(sat_id, file_class, product_type, metadata) -> str:
     return f'{sat_id}_{file_class}_{product_type}_{formatted_timestamp}_{formatted_latitude}_{formatted_longitude}'
 
 
-def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=None, mode:str="1", sat_id: str="PR1", file_class:str="OPER"):
+def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=None, sat_id: str="PR1", file_class:str="OPER"):
 
     if not os.path.exists(output):
         os.makedirs(output)
@@ -302,7 +302,7 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         if extras and os.path.isdir(extras) and extras.endswith('.SAFE'):
             file_data = process_safe(extras)
 
-        product_type = mode_to_product_type[mode.lower()]
+        product_type = mode_to_product_type[metadata['chris_chris_mode'].lower()]
 
         file_name_root = generate_file_name(sat_id, file_class, product_type, metadata)
 
@@ -331,9 +331,8 @@ if __name__ == '__main__':
     parser.add_argument('--inputs', help='list of input files', default=None)
     parser.add_argument("--sat_id", help="satellite identifier", default="PR1")
     parser.add_argument("--file_class", help="file class", default="OPER")
-    parser.add_argument("--mode", help="mode", default="1")
     parser.add_argument("--output", help="output folder", default=".")
     parser.add_argument("--extras", help="additional files", default=None)
     args, unknown = parser.parse_known_args()
 
-    convert_eo_sip(inputs=args.inputs, output=args.output, extras=args.extras, mode=args.mode, file_class=args.file_class, sat_id=args.sat_id)
+    convert_eo_sip(inputs=args.inputs, output=args.output, extras=args.extras, file_class=args.file_class, sat_id=args.sat_id)
