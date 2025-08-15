@@ -17,9 +17,6 @@ from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
 from chris_utils.utils import get_list_of_files
 
-# from information_xml_generator import SIPInfo
-# from metadata_xml_generator import EarthObservation
-# from chris_utils.utils import get_list_of_files
 
 mode_to_product_type = {
     "1": "CHR_MO1_1P",
@@ -197,7 +194,7 @@ def generate_metadata(file_identifier, data=None, metadata: dict=None, image=Non
 
 
 def generate_info(file_identifier):
-    parent_instance = SIPInfo(version="2.0", sip_creator="ESA", sip_creation_time=datetime(2021, 2, 3))
+    parent_instance = SIPInfo(version="2.0", sip_creator="ESA", sip_creation_time=datetime.now())
 
     xml = parent_instance.to_xml(
         pretty_print=False,
