@@ -177,7 +177,7 @@ def get_band_number(colour, wavelengths):
         if minimum <= band <= maximum:
             valid_bands.append([i, band])
 
-    valid_bands = sorted(valid_bands, key=lambda x: x[1])  ## sort bands by wavelength
+    valid_bands = sorted(valid_bands, key=lambda x: x[1])  # sort bands by wavelength
     # choose index from middle of list
     index = len(valid_bands) // 2
     return valid_bands[index][0]
@@ -254,8 +254,6 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         if extras and os.path.isdir(extras) and extras.endswith('.SAFE'):
             file_data = process_safe(extras)
 
-
-
         product_type = mode_to_product_type[mode.lower()]
 
         file_name_root = f'{sat_id}_{file_class}_{product_type}_20100328T011431_N01-800_W078-260'
@@ -289,52 +287,4 @@ if __name__ == '__main__':
     parser.add_argument("--extras", help="additional files", default=None)
     args, unknown = parser.parse_known_args()
 
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
-
-    files = get_list_of_files(args.inputs.split(','))
-    for file in files:
-        logging.info(f"Processing {file}")
-        if file.lower().endswith('.zarr'):  # try as ZARR
-            raw_data, metadata, image, file_data = process_zarr(file)
-        elif file.lower().endswith('.tif'):  # try as COG
-            raw_data, metadata, image, file_data = process_cog(file)
-        else:
-            raise Exception("File type not recognised")
-
-
-        if os.path.isdir(args.extras) and args.extras.endswith('.SAFE'):
-            file_data = process_safe(args.extras)
-
-        print(type(image))
-
-        product_type = mode_to_product_type[args.mode.lower()]
-
-        args_dict = args.__dict__
-
-        file_name_root = f'{args.sat_id}_{args.file_class}_{product_type}_20100328T011431_N01-800_W078-260'
-        version = args_dict["version"] if args_dict.get("version") else get_version(file_name_root)
-        file_name = f'{file_name_root}_{version}'
-
-        metadata = generate_metadata(file_name, raw_data, metadata=metadata, image=image)
-        info = generate_info(file_name)
-        image_data = get_image(image)
-
-        image_file_name = f"{file_name}.BI.PNG"
-        metadata_file_name = f"{file_name}.MD.XML"
-        information_file_name = f"{file_name}.SI.XML"
-        zip_file_name = f"{args.output}/{file_name}.ZIP"
-
-        logging.info(f"Writing to {zip_file_name}")
-        print(zip_file_name)
-        with zipfile.ZipFile(zip_file_name, "w", zipfile.ZIP_DEFLATED) as zip:
-            zip.writestr(image_file_name, image_data)
-            zip.writestr(metadata_file_name, metadata)
-            zip.writestr(information_file_name, info)
-            for name, data in file_data:
-                zip.writestr(name, data)
-
-        logging.info("Complete")
-
-    # Still to do:
-    # - sort out metadata. Everything is currently hard coded
+    convert_eo_sip(inputs=args.inputs, output=args.output, extras=args.extras, mode=args.mode, file_class=args.file_class, sat_id=args.sat_id)
