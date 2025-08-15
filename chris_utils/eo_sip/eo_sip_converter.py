@@ -5,13 +5,13 @@ import logging
 import zipfile
 from datetime import datetime
 import xarray as xr
+import math
 
 import numpy as np
 from PIL import Image
 import pandas as pd
 
 import rasterio
-from rasterio.errors import RasterioError
 
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
@@ -236,6 +236,57 @@ def get_image(image):
     return img_byte_arr.getvalue()
 
 
+def format_latitude(raw: float) -> str:
+    raw_decimal_degrees, raw_degrees = math.modf(raw)
+    abs = math.fabs(raw_degrees)
+    abs_decimal = math.fabs(raw_decimal_degrees*1000)
+
+    if raw_degrees < 0:
+        hemisphere = 'S'
+        degrees = "{:2.0f}".format(abs)
+    else:
+        hemisphere = 'N'
+        degrees = "{:2.0f}".format(abs)
+
+    decimal_degrees = "{:3.0f}".format(abs_decimal)
+
+    return f"{hemisphere}{degrees}-{decimal_degrees}"
+
+
+def format_longitude(raw: float) -> str:
+    raw_decimal_degrees, raw_degrees = math.modf(raw)
+    abs = math.fabs(raw_degrees)
+    abs_decimal = math.fabs(raw_decimal_degrees*1000)
+
+    if raw_degrees < 0:
+        hemisphere = 'W'
+        degrees = "{:3.0f}".format(abs)
+    else:
+        hemisphere = 'E'
+        degrees = "{:3.0f}".format(abs)
+
+    decimal_degrees = "{:3.0f}".format(abs_decimal)
+
+    return f"{hemisphere}{degrees}-{decimal_degrees}"
+
+
+def generate_file_name(sat_id, file_class, product_type, metadata) -> str:
+    """Generates a file name from the provided metadata"""
+
+    latitude = metadata['center_lat']
+    longitude = metadata['center_lon']
+    formatted_latitude = format_latitude(latitude)
+    formatted_longitude = format_longitude(longitude)
+
+    timestamp = datetime.strptime(
+        f"{metadata['chris_image_date_yyyy_mm_dd_']} {metadata['chris_calculated_image_centre_time']}",
+        "%Y-%m-%d %H:%M:%S"
+    )
+    formatted_timestamp = timestamp.strftime('%Y%m%dT%H%M%S')
+
+    return f'{sat_id}_{file_class}_{product_type}_{formatted_timestamp}_{formatted_latitude}_{formatted_longitude}'
+
+
 def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=None, mode:str="1", sat_id: str="PR1", file_class:str="OPER"):
 
     if not os.path.exists(output):
@@ -256,7 +307,8 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
 
         product_type = mode_to_product_type[mode.lower()]
 
-        file_name_root = f'{sat_id}_{file_class}_{product_type}_20100328T011431_N01-800_W078-260'
+        file_name_root = generate_file_name(sat_id, file_class, product_type, metadata)
+
         version = version if version else get_version(file_name_root)
         file_name = f'{file_name_root}_{version}'
 
