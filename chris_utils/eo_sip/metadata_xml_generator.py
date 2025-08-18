@@ -270,29 +270,29 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         serial_identifier = "1"
         sensor_type = "OPTICAL"
         sensor_code_space = "urn:esa:eop:PROBA:CHRIS:operationalMode"
-        operational_mode = "MODE-3"
+        operational_mode = f"MODE-{data['data']['chris_chris_mode']}"
         orbit_number = "000000"
         wrs_longitude_grid_code_space = "urn:esa:eop:PROBA:TileColumn"
-        wrs_longitude_grid = "W078"
+        wrs_longitude_grid = data['data']['formatted_longitude'][0]
         wrs_latitude_grid_code_space = "urn:esa:eop:PROBA:TileRow"
-        wrs_latitude_grid = "N01"
+        wrs_latitude_grid = data['data']['formatted_latitude'][0]
         uom_deg = "deg"
-        illumination_azimuth_angle = "46.11"
-        illumination_elevation_angle = "61.47"
+        illumination_azimuth_angle = "46.11*"
+        illumination_elevation_angle = "61.47*"
         pos_list = (
-            "0.43 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"
+            "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"
         )
-        pos = "0.0045000384979 113.206"
+        pos = "0.0045000384979* 113.206"
         eo_sip_file_name = f"{id}.SIP.ZIP"
         uom_bytes = "bytes"
-        file_size = "10067698"
+        file_size = "10067698*"
         acquisition_type = "NOMINAL"
-        product_type = "CHR_MO3_1P"
+        product_type = data['data']['product_type']
         status = "ARCHIVED"
         vendor_specific_data = [
-            ("originalName", "CHRIS_PA_151114_1E77_41"),
-            ("siteName", "Punta Alta"),
-            ("targetCode", "PA"),
+            ("originalName", "CHRIS_PA_151114_1E77_41*"),
+            ("siteName", "Punta Alta*"),
+            ("targetCode", "PA*"),
         ]
 
         vendor_specific_list = []
