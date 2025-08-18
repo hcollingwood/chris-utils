@@ -103,7 +103,7 @@ def process_zarr(path):
 
     metadata = contents.attrs
 
-    r_band, g_band, b_band = get_band_numbers(metadata["wavelength"])
+    r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
     longest_group = max(contents.groups)
     d = contents.to_dict()
@@ -113,9 +113,10 @@ def process_zarr(path):
         df[band] = d['/measurements/reflectance/r18m'].data_vars[band].to_dataframe()
     df = df.reset_index()
 
-    r_column = df.columns[r_band]
-    g_column = df.columns[g_band]
-    b_column = df.columns[b_band]
+    # +2 added to skip the x and the y columns
+    r_column = df.columns[r_band+2]
+    g_column = df.columns[g_band+2]
+    b_column = df.columns[b_band+2]
 
     logging.info(f'Generating image with bands {r_column}, {g_column} and {b_column}')
 
@@ -157,34 +158,32 @@ def process_safe(path):
 
 
 
-
 def make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b):
     return np.stack([thumbnail_r, thumbnail_g, thumbnail_b], axis=-1)
 
-def get_band_numbers(wavelengths):
-    red_band = get_band_number("red", wavelengths)
-    green_band = get_band_number("green", wavelengths)
-    blue_band = get_band_number("blue", wavelengths)
+
+def get_band_indexes(wavelengths):
+    red_band = get_band_index("red", wavelengths)
+    green_band = get_band_index("green", wavelengths)
+    blue_band = get_band_index("blue", wavelengths)
     return red_band, green_band, blue_band
 
-def get_band_number(colour, wavelengths):
+def get_band_index(colour, wavelengths):
     minimum, maximum = all_wavelengths[colour]
     valid_bands = []
     for i, band in enumerate(wavelengths):
         if minimum <= band <= maximum:
             valid_bands.append([i, band])
 
-    valid_bands = sorted(valid_bands, key=lambda x: x[1])  # sort bands by wavelength
-    # choose index from middle of list
-    index = len(valid_bands) // 2
-    return valid_bands[index][0]
+    closest_matching_wavelength = min(valid_bands, key=lambda x:abs(x[1]-(minimum+maximum)/2))
+
+    return closest_matching_wavelength[0]
 
 
 
 def generate_metadata(file_identifier, data=None, metadata: dict=None, image=None, report=None):
 
-
-    xml = EarthObservation(id=file_identifier).to_xml(
+    xml = EarthObservation(id=file_identifier, data=metadata).to_xml(
         pretty_print=True,
         encoding='UTF-8',
         standalone=True
@@ -247,7 +246,7 @@ def format_latitude(raw: float) -> str:
 
     decimal_degrees = "{:3.0f}".format(abs_decimal)
 
-    return f"{hemisphere}{degrees}-{decimal_degrees}"
+    return f"{hemisphere}{degrees}",decimal_degrees
 
 
 def format_longitude(raw: float) -> str:
@@ -264,24 +263,13 @@ def format_longitude(raw: float) -> str:
 
     decimal_degrees = "{:3.0f}".format(abs_decimal)
 
-    return f"{hemisphere}{degrees}-{decimal_degrees}"
+    return f"{hemisphere}{degrees}", decimal_degrees
 
 
-def generate_file_name(sat_id, file_class, product_type, metadata) -> str:
+def generate_file_name(metadata) -> str:
     """Generates a file name from the provided metadata"""
 
-    latitude = metadata['center_lat']
-    longitude = metadata['center_lon']
-    formatted_latitude = format_latitude(latitude)
-    formatted_longitude = format_longitude(longitude)
-
-    timestamp = datetime.strptime(
-        f"{metadata['chris_image_date_yyyy_mm_dd_']} {metadata['chris_calculated_image_centre_time']}",
-        "%Y-%m-%d %H:%M:%S"
-    )
-    formatted_timestamp = timestamp.strftime('%Y%m%dT%H%M%S')
-
-    return f'{sat_id}_{file_class}_{product_type}_{formatted_timestamp}_{formatted_latitude}_{formatted_longitude}'
+    return f'{metadata["sat_id"]}_{metadata["file_class"]}_{metadata["product_type"]}_{metadata["formatted_timestamp"]}_{metadata["formatted_latitude"][0]}-{metadata["formatted_latitude"][1]}_{metadata["formatted_longitude"][0]}-{metadata["formatted_longitude"][1]}'
 
 
 def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=None, sat_id: str="PR1", file_class:str="OPER"):
@@ -302,9 +290,18 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         if extras and os.path.isdir(extras) and extras.endswith('.SAFE'):
             file_data = process_safe(extras)
 
-        product_type = mode_to_product_type[metadata['chris_chris_mode'].lower()]
+        metadata["sat_id"] = sat_id
+        metadata["file_class"] = file_class
+        metadata["product_type"] = mode_to_product_type[metadata['chris_chris_mode'].lower()]
+        metadata["formatted_latitude"] = format_latitude(metadata['center_lat'])
+        metadata["formatted_longitude"] = format_longitude(metadata['center_lon'])
 
-        file_name_root = generate_file_name(sat_id, file_class, product_type, metadata)
+        timestamp = datetime.strptime(
+            f"{metadata['chris_image_date_yyyy_mm_dd_']} {metadata['chris_calculated_image_centre_time']}",
+            "%Y-%m-%d %H:%M:%S"
+        )
+        metadata["formatted_timestamp"] = timestamp.strftime('%Y%m%dT%H%M%S')
+        file_name_root = generate_file_name(metadata)
 
         version = version if version else get_version(file_name_root)
         file_name = f'{file_name_root}_{version}'
