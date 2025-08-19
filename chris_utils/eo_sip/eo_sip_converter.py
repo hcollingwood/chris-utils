@@ -143,8 +143,6 @@ def process_zarr(path):
 
 
 def process_safe(path):
-
-
     file_data = []
     file_root = '/'.join(path.rsplit('/')[:-1])
     for path, dirs, files in os.walk(path):
@@ -233,34 +231,24 @@ def get_image(image):
 
 
 def format_latitude(raw: float) -> str:
-    raw_decimal_degrees, raw_degrees = math.modf(raw)
+    raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
     abs = math.fabs(raw_degrees)
-    abs_decimal = math.fabs(raw_decimal_degrees*1000)
+    abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
 
-    if raw_degrees < 0:
-        hemisphere = 'S'
-        degrees = "{:2.0f}".format(abs)
-    else:
-        hemisphere = 'N'
-        degrees = "{:2.0f}".format(abs)
-
+    hemisphere = 'S' if raw_degrees < 0 else 'N'
+    degrees = "{:2.0f}".format(abs)
     decimal_degrees = "{:3.0f}".format(abs_decimal)
 
-    return f"{hemisphere}{degrees}",decimal_degrees
+    return f"{hemisphere}{degrees}", decimal_degrees
 
 
 def format_longitude(raw: float) -> str:
-    raw_decimal_degrees, raw_degrees = math.modf(raw)
+    raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
     abs = math.fabs(raw_degrees)
-    abs_decimal = math.fabs(raw_decimal_degrees*1000)
+    abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
 
-    if raw_degrees < 0:
-        hemisphere = 'W'
-        degrees = "{:3.0f}".format(abs)
-    else:
-        hemisphere = 'E'
-        degrees = "{:3.0f}".format(abs)
-
+    hemisphere = 'W' if raw_degrees < 0 else 'E'
+    degrees = "{:3.0f}".format(abs)
     decimal_degrees = "{:3.0f}".format(abs_decimal)
 
     return f"{hemisphere}{degrees}", decimal_degrees
