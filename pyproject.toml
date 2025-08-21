@@ -80,7 +80,7 @@ include-package-data = true
 enabled = true
 
 [tool.setuptools.package-data]
-chris_utils = ["*.json"]
+chris_utils = ["*.json", "*.xsd"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
