@@ -40,6 +40,7 @@ def copy_mos_file(output_file_path) -> None:
 def make_safe(inputs: str, output: str = '.', package_type:str=None, mode:str="1", file_class:str="OPER", sat_id="PR1"):
     """Generates SAFE archive for specified input file(s)"""
 
+    # TODO: update/remove any unused input variables
     if not os.path.exists(output):
         os.makedirs(output)
 

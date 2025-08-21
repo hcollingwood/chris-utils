@@ -354,6 +354,8 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
 
         file_size = get_file_size(file)
 
+        # TODO: verify that all the required inputs are in the metadata file
+
         raw_metadata['chris_latitude'] = raw_metadata['chris_lattitude']
 
         raw_metadata['file_size'] = file_size
