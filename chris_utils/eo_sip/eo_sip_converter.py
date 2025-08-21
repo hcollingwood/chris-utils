@@ -1,4 +1,5 @@
 import argparse
+import calendar
 import io
 import os
 import logging
@@ -34,6 +35,21 @@ all_wavelengths = {
 }
 
 
+def sin_deg(angle):
+    return math.sin(math.radians(angle))
+
+
+def cos_deg(angle):
+    return math.cos(math.radians(angle))
+
+
+def asin_deg(angle):
+    return math.degrees(math.sin(angle))
+
+
+def acos_deg(angle):
+    return math.degrees(math.cos(angle))
+
 def process_cog(path):
     with rasterio.open(path) as dataset:
         metadata = dataset.meta
@@ -64,38 +80,38 @@ def process_cog(path):
         return dataset, metadata, thumbnail_rgb, [(data_file_name, file_data)]
 
 
-def process_zarr_old(path):
-    # path1 = "/home/hcollingwood/Documents/Code/eo-sip-converter/3FB1Image.zarr"
-    contents = xr.open_zarr(path)
-
-    metadata = contents["data"]
-
-    r_band, g_band, b_band = get_band_numbers(metadata.coords["wavelength"].values)
-
-    df = contents.to_dataframe().reset_index()
-    # print(df)
-    thumbnail_data_r = df[df.band == r_band].filter(items=['x', 'y', 'data'])
-    thumbnail_data_g = df[df.band == g_band].filter(items=['x', 'y', 'data'])
-    thumbnail_data_b = df[df.band == b_band].filter(items=['x', 'y', 'data'])
-
-    thumbnail_r = thumbnail_data_r.pivot(index='y', columns='x', values='data').to_numpy()
-    thumbnail_g = thumbnail_data_g.pivot(index='y', columns='x', values='data').to_numpy()
-    thumbnail_b = thumbnail_data_b.pivot(index='y', columns='x', values='data').to_numpy()
-
-    thumbnail_rgb = make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b)
-
-    data = contents
-
-    file_data = []
-    file_root = '/'.join(path.rsplit('/')[:-1])
-    for path, dirs, files in os.walk(path):
-        for file in files:
-            file_path = f"{path}/{file}"
-            if os.path.isfile(file_path):
-                binary_data = open(file_path, 'rb').read()
-                file_data.append([file_path.replace(file_root, ""), binary_data])
-
-    return data, metadata, thumbnail_rgb, file_data
+# def process_zarr_old(path):
+#     # path1 = "/home/hcollingwood/Documents/Code/eo-sip-converter/3FB1Image.zarr"
+#     contents = xr.open_zarr(path)
+#
+#     metadata = contents["data"]
+#
+#     r_band, g_band, b_band = get_band_numbers(metadata.coords["wavelength"].values)
+#
+#     df = contents.to_dataframe().reset_index()
+#     # print(df)
+#     thumbnail_data_r = df[df.band == r_band].filter(items=['x', 'y', 'data'])
+#     thumbnail_data_g = df[df.band == g_band].filter(items=['x', 'y', 'data'])
+#     thumbnail_data_b = df[df.band == b_band].filter(items=['x', 'y', 'data'])
+#
+#     thumbnail_r = thumbnail_data_r.pivot(index='y', columns='x', values='data').to_numpy()
+#     thumbnail_g = thumbnail_data_g.pivot(index='y', columns='x', values='data').to_numpy()
+#     thumbnail_b = thumbnail_data_b.pivot(index='y', columns='x', values='data').to_numpy()
+#
+#     thumbnail_rgb = make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b)
+#
+#     data = contents
+#
+#     file_data = []
+#     file_root = '/'.join(path.rsplit('/')[:-1])
+#     for path, dirs, files in os.walk(path):
+#         for file in files:
+#             file_path = f"{path}/{file}"
+#             if os.path.isfile(file_path):
+#                 binary_data = open(file_path, 'rb').read()
+#                 file_data.append([file_path.replace(file_root, ""), binary_data])
+#
+#     return data, metadata, thumbnail_rgb, file_data
 
 
 def process_zarr(path):
@@ -132,9 +148,9 @@ def process_zarr(path):
 
     file_data = []
     file_root = '/'.join(path.rsplit('/')[:-1])
-    for path, dirs, files in os.walk(path):
+    for root_path, dirs, files in os.walk(path):
         for file in files:
-            file_path = f"{path}/{file}"
+            file_path = os.path.join(root_path, file)
             if os.path.isfile(file_path):
                 binary_data = open(file_path, 'rb').read()
                 file_data.append([file_path.replace(file_root, ""), binary_data])
@@ -165,6 +181,7 @@ def get_band_indexes(wavelengths):
     green_band = get_band_index("green", wavelengths)
     blue_band = get_band_index("blue", wavelengths)
     return red_band, green_band, blue_band
+
 
 def get_band_index(colour, wavelengths):
     minimum, maximum = all_wavelengths[colour]
@@ -260,6 +277,63 @@ def generate_file_name(metadata) -> str:
     return f'{metadata["sat_id"]}_{metadata["file_class"]}_{metadata["product_type"]}_{metadata["formatted_timestamp"]}_{metadata["formatted_latitude"][0]}-{metadata["formatted_latitude"][1]}_{metadata["formatted_longitude"][0]}-{metadata["formatted_longitude"][1]}'
 
 
+def get_file_size(path):
+    if os.path.isfile(path):
+        total_size = os.path.getsize(path)
+    else:
+        total_size = 0
+        for root_path, dirs, files in os.walk(path):
+            for file in files:
+                file_path = os.path.join(root_path, file)
+                if not os.path.islink(file_path):
+                    total_size += os.path.getsize(file_path)
+
+    return total_size
+
+
+def calculate_angles(metadata):
+    # illumination_azimuth_angle = "46.11*"  # astropy
+    # illumination_elevation_angle = "61.47*"  # solar zenith angle
+
+    """
+    Equations from here:
+    https://www.pveducation.org/pvcdrom/properties-of-sunlight/declination-angle
+    https://www.pveducation.org/pvcdrom/properties-of-sunlight/azimuth-angle
+    https://www.pveducation.org/pvcdrom/properties-of-sunlight/elevation-angle
+    https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+    """
+
+
+    timestamp = metadata['timestamp']
+    latitude = float(metadata['chris_latitude'])
+    longitude = float(metadata['chris_longitude'])
+
+    day_of_year = int(timestamp.strftime('%j'))
+    days_in_year = 366 if calendar.isleap(timestamp.year) else 365
+    fraction_of_year = (2 * math.pi / days_in_year) * (day_of_year - 1 + (timestamp.hour - 12) / 24)
+
+    equation_of_time = 229.18 * (
+                0.000075 + 0.001868 * math.cos(fraction_of_year) - 0.032077 * math.sin(fraction_of_year) - 0.014615 * math.cos(
+            2 * fraction_of_year) - 0.040849 * math.sin(2 * fraction_of_year))
+
+    declination_rad = 0.006918 - 0.399912 * math.cos(fraction_of_year) + 0.070257 * math.sin(fraction_of_year) - 0.006758 * math.cos(2*fraction_of_year) + 0.000907 * math.sin(2*fraction_of_year) - 0.002697 *  math.cos(3 * fraction_of_year) + 0.00148 * math.sin(3 * fraction_of_year)
+    declination_deg = math.degrees(declination_rad)
+
+    time_offset = equation_of_time + 4*longitude
+
+    true_solar_time = timestamp.hour*60 + timestamp.minute + timestamp.second/60 + time_offset
+
+    solar_hour_angle = true_solar_time/4 - 180
+
+    zenith_deg = acos_deg(    sin_deg(latitude) * sin_deg(declination_deg) + cos_deg(latitude) * cos_deg(declination_deg) * cos_deg(solar_hour_angle))
+    # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
+    azimuth_deg = 180 - acos_deg(-(sin_deg(latitude)*cos_deg(zenith_deg) - sin_deg(declination_deg)) / (cos_deg(latitude) * sin_deg(zenith_deg)))
+
+    elevation_deg = 90 + latitude - declination_deg
+
+    return azimuth_deg, elevation_deg
+
+
 def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=None, sat_id: str="PR1", file_class:str="OPER"):
 
     if not os.path.exists(output):
@@ -269,33 +343,43 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
     for file in files:
         logging.info(f"Processing {file}")
         if file.lower().endswith('.zarr'):  # try as ZARR
-            raw_data, metadata, image, file_data = process_zarr(file)
+            raw_data, raw_metadata, image, file_data = process_zarr(file)
         elif file.lower().endswith('.tif'):  # try as COG
-            raw_data, metadata, image, file_data = process_cog(file)
+            raw_data, raw_metadata, image, file_data = process_cog(file)
         else:
             raise Exception("File type not recognised")
 
         if extras and os.path.isdir(extras) and extras.endswith('.SAFE'):
-            file_data = process_safe(extras)
+            file_data = process_safe(extras)  # overwrite Zarr/COG file data - not needed for SAFE
 
-        metadata["sat_id"] = sat_id
-        metadata["file_class"] = file_class
-        metadata["product_type"] = mode_to_product_type[metadata['chris_chris_mode'].lower()]
-        metadata["formatted_latitude"] = format_latitude(metadata['center_lat'])
-        metadata["formatted_longitude"] = format_longitude(metadata['center_lon'])
+        file_size = get_file_size(file)
+
+        raw_metadata['chris_latitude'] = raw_metadata['chris_lattitude']
+
+        raw_metadata['file_size'] = file_size
+
+        raw_metadata["sat_id"] = sat_id
+        raw_metadata["file_class"] = file_class
+        raw_metadata["product_type"] = mode_to_product_type[raw_metadata['chris_chris_mode'].lower()]
+        raw_metadata["formatted_latitude"] = format_latitude(raw_metadata['center_lat'])
+        raw_metadata["formatted_longitude"] = format_longitude(raw_metadata['center_lon'])
 
         timestamp = datetime.strptime(
-            f"{metadata['chris_image_date_yyyy_mm_dd_']} {metadata['chris_calculated_image_centre_time']}",
+            f"{raw_metadata['chris_image_date_yyyy_mm_dd_']} {raw_metadata['chris_calculated_image_centre_time']}",
             "%Y-%m-%d %H:%M:%S"
         )
-        metadata["formatted_timestamp"] = timestamp.strftime('%Y%m%dT%H%M%S')
-        file_name_root = generate_file_name(metadata)
+        raw_metadata["timestamp"] = timestamp
+        raw_metadata["formatted_timestamp"] = timestamp.strftime('%Y%m%dT%H%M%S')
+        file_name_root = generate_file_name(raw_metadata)
+
+        raw_metadata['illumination_azimuth_angle'], raw_metadata['illumination_elevation_angle'] = calculate_angles(raw_metadata)
+
 
         version = version if version else get_version(file_name_root)
         file_name = f'{file_name_root}_{version}'
 
-        metadata = generate_metadata(file_name, raw_data, metadata=metadata, image=image)
-        info = generate_info(file_name)
+        xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)
+        xml_info = generate_info(file_name)
         image_data = get_image(image)
 
         image_file_name = f"{file_name}.BI.PNG"
@@ -306,18 +390,18 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         logging.info(f"Writing to {zip_file_name}")
         with zipfile.ZipFile(zip_file_name, "w", zipfile.ZIP_DEFLATED) as zip:
             zip.writestr(image_file_name, image_data)
-            zip.writestr(metadata_file_name, metadata)
-            zip.writestr(information_file_name, info)
+            zip.writestr(metadata_file_name, xml_metadata)
+            zip.writestr(information_file_name, xml_info)
             for name, data in file_data:
                 zip.writestr(name, data)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='EO-SIP')
-    parser.add_argument('--inputs', help='list of input files', default=None)
+    parser.add_argument('inputs', nargs=1, help='list of input files')
     parser.add_argument("--sat_id", help="satellite identifier", default="PR1")
     parser.add_argument("--file_class", help="file class", default="OPER")
     parser.add_argument("--output", help="output folder", default=".")
     parser.add_argument("--extras", help="additional files", default=None)
     args, unknown = parser.parse_known_args()
 
-    convert_eo_sip(inputs=args.inputs, output=args.output, extras=args.extras, file_class=args.file_class, sat_id=args.sat_id)
+    convert_eo_sip(inputs=args.inputs[0], output=args.output, extras=args.extras, file_class=args.file_class, sat_id=args.sat_id)

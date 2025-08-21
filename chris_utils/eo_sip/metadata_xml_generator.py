@@ -39,7 +39,7 @@ class EarthObservationMetaData(
 
 class Size(BaseXmlModel, ns="eop", tag="size"):
     uom: str = attr(ns=None)
-    value: str = element
+    value: int = element
 
 
 class RequestMessage(BaseXmlModel, ns="ows", tag="RequestMessage"):
@@ -126,7 +126,7 @@ class Footprint(BaseXmlModel, ns="eop", nsmap=namespaces, tag="Footprint"):
 
 class IlluminationAngle(BaseXmlModel, nsmap=namespaces, ns="eop"):
     uom: str = attr(ns=None)
-    value: str = element
+    value: float = element
 
 
 class WrsGrid(BaseXmlModel, nsmap=namespaces, ns="eop"):
@@ -262,34 +262,35 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
     meta_data_property: MetaDataProperty
 
     def __init__(self, id: str, **data):
-        begin_position = BeginPosition(position=datetime(year=2024, month=12, day=1))
-        end_position = EndPosition(position=datetime(year=2024, month=12, day=31))
-        time_position = TimePosition(position=datetime(year=2024, month=12, day=1))
+        metadata = data['data']
+        begin_position = BeginPosition(position=metadata['timestamp'])
+        end_position = EndPosition(position=datetime(year=1970, month=1, day=1))
+        time_position = TimePosition(position=datetime(year=1970, month=1, day=1))
         sensor_short_name = "PROBA"
         instrument_short_name = "CHRIS"
         serial_identifier = "1"
         sensor_type = "OPTICAL"
         sensor_code_space = "urn:esa:eop:PROBA:CHRIS:operationalMode"
-        operational_mode = f"MODE-{data['data']['chris_chris_mode']}"
-        orbit_number = "000000"
+        operational_mode = f"MODE-{metadata['chris_chris_mode']}"
+        orbit_number = "000000*"
         wrs_longitude_grid_code_space = "urn:esa:eop:PROBA:TileColumn"
-        wrs_longitude_grid = data['data']['formatted_longitude'][0]
+        wrs_longitude_grid = metadata['formatted_longitude'][0]
         wrs_latitude_grid_code_space = "urn:esa:eop:PROBA:TileRow"
-        wrs_latitude_grid = data['data']['formatted_latitude'][0]
+        wrs_latitude_grid = metadata['formatted_latitude'][0]
         uom_deg = "deg"
-        illumination_azimuth_angle = "46.11*"
-        illumination_elevation_angle = "61.47*"
+        illumination_azimuth_angle = metadata['illumination_azimuth_angle']
+        illumination_elevation_angle = metadata['illumination_elevation_angle']
         pos_list = (
             "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"
-        )
-        pos = "0.0045000384979* 113.206"
+        )   #aoi box  leave for now
+        pos = "0.0045000384979* 113.206" # leave for now
         eo_sip_file_name = f"{id}.SIP.ZIP"
         uom_bytes = "bytes"
-        file_size = "10067698*"
+        file_size = metadata['file_size']
         acquisition_type = "NOMINAL"
         product_type = data['data']['product_type']
         status = "ARCHIVED"
-        vendor_specific_data = [
+        vendor_specific_data = [  # leave for now
             ("originalName", "CHRIS_PA_151114_1E77_41*"),
             ("siteName", "Punta Alta*"),
             ("targetCode", "PA*"),
