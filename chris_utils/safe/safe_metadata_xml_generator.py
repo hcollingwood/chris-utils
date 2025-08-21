@@ -1,4 +1,5 @@
 import hashlib
+import logging
 from typing import Optional
 
 from pydantic_xml import BaseXmlModel, attr, element
@@ -110,7 +111,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
         data_object_list = []
         if data_objects:
             for data_object in data_objects:
-                print(data_object)
+                logging.info(data_object)
                 checksum = Checksum(
                     checksum_name="MD5", value=calculate_checksum(data_object)
                 )
@@ -196,4 +197,3 @@ if __name__ == "__main__":
     ).decode("utf-8")
 
     print(xml)
-    print("complete")

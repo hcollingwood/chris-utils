@@ -53,7 +53,7 @@ def acos_deg(angle):
 def process_cog(path):
     with rasterio.open(path) as dataset:
         metadata = dataset.meta
-        print(metadata)
+        # print(metadata)
         # print(dataset.profile)
         # data = metadata.read(1) ## band 1
         # views = dataset.overviews(1)
@@ -190,6 +190,9 @@ def get_band_index(colour, wavelengths):
         if minimum <= band <= maximum:
             valid_bands.append([i, band])
 
+    if not valid_bands:
+        raise ValueError(f"No {colour} band in {minimum}-{maximum} nm; available: {list(wavelengths)}")
+
     closest_matching_wavelength = min(valid_bands, key=lambda x:abs(x[1]-(minimum+maximum)/2))
 
     return closest_matching_wavelength[0]
@@ -197,7 +200,7 @@ def get_band_index(colour, wavelengths):
 
 
 def generate_metadata(file_identifier, data=None, metadata: dict=None, image=None, report=None):
-
+    # TODO: check inputs and update/remove is not needed
     xml = EarthObservation(id=file_identifier, data=metadata).to_xml(
         pretty_print=True,
         encoding='UTF-8',

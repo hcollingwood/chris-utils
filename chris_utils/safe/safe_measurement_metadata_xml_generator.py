@@ -250,5 +250,3 @@ if __name__ == "__main__":
     ).decode("utf-8")
 
     print(xml)
-
-    print("complete")

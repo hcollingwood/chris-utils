@@ -107,7 +107,6 @@ def make_safe(inputs: str, output: str = '.', package_type:str=None, mode:str="1
 
             with open(f"{output_file_path}/{file_name}.xsd", "w") as f:
                 f.write(measurement_xml)
-            print(file_name)
 
             copy_mos_file(output_file_path)
 
