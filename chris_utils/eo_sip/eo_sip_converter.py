@@ -219,12 +219,12 @@ def generate_info(file_identifier):
     return xml
 
 
-def get_version(root):
+def get_version(root, output_folder='.'):
     version = 1
     while True:
         padded_number = f"{version:0>4}"
 
-        file = f"{root}_{padded_number}.ZIP"
+        file = f"{output_folder}/{root}_{padded_number}.ZIP"
         if os.path.exists(file):
             version += 1
         else:
@@ -375,7 +375,7 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         raw_metadata['illumination_azimuth_angle'], raw_metadata['illumination_elevation_angle'] = calculate_angles(raw_metadata)
 
 
-        version = version if version else get_version(file_name_root)
+        version = version if version else get_version(file_name_root, output)
         file_name = f'{file_name_root}_{version}'
 
         xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)
