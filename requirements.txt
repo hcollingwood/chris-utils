@@ -9,9 +9,25 @@ affine==2.4.0
 annotated-types==0.7.0
     # via pydantic
 attrs==25.3.0
-    # via rasterio
+    # via
+    #   cattrs
+    #   rasterio
+    #   requests-cache
+beautifulsoup4==4.13.4
+    # via pydap
+cattrs==25.1.1
+    # via requests-cache
 certifi==2025.8.3
-    # via rasterio
+    # via
+    #   netcdf4
+    #   rasterio
+    #   requests
+cftime==1.6.4.post1
+    # via
+    #   netcdf4
+    #   xarray
+charset-normalizer==3.4.3
+    # via requests
 click==8.2.1
     # via
     #   click-plugins
@@ -21,24 +37,59 @@ click-plugins==1.1.1.2
     # via rasterio
 cligj==0.7.2
     # via rasterio
-crc16==0.1.1
-    # via eo-sip-converter (pyproject.toml)
+crc32c==2.7.1
+    # via numcodecs
+donfig==0.8.1.post1
+    # via zarr
+fsspec==2025.7.0
+    # via xarray
+h5netcdf==1.6.4
+    # via xarray
+h5py==3.14.0
+    # via h5netcdf
+idna==3.10
+    # via
+    #   requests
+    #   url-normalize
 lxml==6.0.0
-    # via eo-sip-converter (pyproject.toml)
+    # via
+    #   chris-utils (pyproject.toml)
+    #   pydap
+netcdf4==1.7.2
+    # via xarray
+numcodecs[crc32c]==0.16.2
+    # via zarr
 numpy==2.3.2
     # via
-    #   eo-sip-converter (pyproject.toml)
+    #   cftime
+    #   chris-utils (pyproject.toml)
+    #   h5py
+    #   netcdf4
+    #   numcodecs
     #   pandas
+    #   pydap
     #   rasterio
+    #   scipy
     #   xarray
+    #   zarr
 packaging==25.0
-    # via xarray
+    # via
+    #   h5netcdf
+    #   pooch
+    #   xarray
+    #   zarr
 pandas==2.3.1
     # via
-    #   eo-sip-converter (pyproject.toml)
+    #   chris-utils (pyproject.toml)
     #   xarray
 pillow==11.3.0
-    # via eo-sip-converter (pyproject.toml)
+    # via chris-utils (pyproject.toml)
+platformdirs==4.3.8
+    # via
+    #   pooch
+    #   requests-cache
+pooch==1.8.2
+    # via xarray
 pydantic==2.11.7
     # via pydantic-xml
 pydantic-core==2.33.2
@@ -46,25 +97,56 @@ pydantic-core==2.33.2
     #   pydantic
     #   pydantic-xml
 pydantic-xml==2.17.3
-    # via eo-sip-converter (pyproject.toml)
+    # via chris-utils (pyproject.toml)
+pydap==3.5.6
+    # via xarray
 pyparsing==3.2.3
     # via rasterio
 python-dateutil==2.9.0.post0
     # via pandas
 pytz==2025.2
     # via pandas
+pyyaml==6.0.2
+    # via donfig
 rasterio==1.4.3
-    # via eo-sip-converter (pyproject.toml)
+    # via chris-utils (pyproject.toml)
+requests==2.32.5
+    # via
+    #   pooch
+    #   pydap
+    #   requests-cache
+requests-cache==1.2.1
+    # via pydap
+scipy==1.16.1
+    # via
+    #   pydap
+    #   xarray
 six==1.17.0
     # via python-dateutil
+soupsieve==2.7
+    # via beautifulsoup4
 typing-extensions==4.14.1
     # via
+    #   beautifulsoup4
+    #   cattrs
+    #   numcodecs
     #   pydantic
     #   pydantic-core
     #   typing-inspection
+    #   zarr
 typing-inspection==0.4.1
     # via pydantic
 tzdata==2025.2
     # via pandas
-xarray==2025.7.1
-    # via eo-sip-converter (pyproject.toml)
+url-normalize==2.2.1
+    # via requests-cache
+urllib3==2.5.0
+    # via
+    #   requests
+    #   requests-cache
+webob==1.8.9
+    # via pydap
+xarray[io]==2025.7.1
+    # via chris-utils (pyproject.toml)
+zarr==3.1.1
+    # via xarray
