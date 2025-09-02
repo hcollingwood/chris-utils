@@ -3,6 +3,7 @@ import calendar
 import io
 import os
 import logging
+import re
 import zipfile
 from datetime import datetime
 import xarray as xr
@@ -49,6 +50,64 @@ def asin_deg(angle):
 
 def acos_deg(angle):
     return math.degrees(math.cos(angle))
+
+def check_metadata(metadata: dict):
+    regex_checks = {
+        'chris_lattitude': r'[-]?\d{3}.\d{2}',
+        'chris_longitude': r'[-]?\d{3}.\d{2}',
+        'chris_chris_mode': r'[1-5]|hrc',
+        'chris_image_date_yyyy_mm_dd_': r'[A-z0-9-:\s]+',
+        'chris_calculated_image_centre_time': r'[A-z0-9-:\s]+'
+    }
+
+    numeric_checks = {
+        'chris_lattitude': [-90, 90],
+        'chris_longitude': [-180, 180]
+    }
+    datetime_checks = {
+        'chris_image_date_yyyy_mm_dd_': '%Y-%m-%d',
+        'chris_calculated_image_centre_time': '%H:%M:%S',
+    }
+
+    missing_values = set()
+    invalid_values = set()
+
+    for key in regex_checks.keys():
+       if not metadata.get(key):
+            missing_values.add(key)
+            break
+
+       if not re.match(regex_checks[key], metadata[key]):
+            invalid_values.add(key)
+
+
+    for key in numeric_checks.keys():
+        if not metadata.get(key):
+            missing_values.add(key)
+            break
+
+        min_value, max_value = numeric_checks[key]
+        value = metadata[key]
+        if type(value) is str:
+            value = float(value)
+        if not min_value <= value <= max_value:
+            invalid_values.add(key)
+
+    for key in datetime_checks.keys():
+        if not metadata.get(key):
+            missing_values.add(key)
+            break
+
+        try:
+            datetime.strptime(metadata[key], datetime_checks[key])
+        except ValueError:
+            invalid_values.add(key)
+
+    if missing_values:
+        raise Exception(f"Missing metadata entries detected: {missing_values}")
+    if invalid_values:
+        raise Exception(f"Invalid metadata detected: {invalid_values}")
+
 
 def process_cog(path):
     with rasterio.open(path) as dataset:
@@ -122,11 +181,12 @@ def process_zarr(path):
     r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
     longest_group = max(contents.groups)
+
     d = contents.to_dict()
 
     df = pd.DataFrame()
     for band in list(d[longest_group].data_vars):
-        df[band] = d['/measurements/reflectance/r18m'].data_vars[band].to_dataframe()
+        df[band] = d[longest_group].data_vars[band].to_dataframe()
     df = df.reset_index()
 
     # +2 added to skip the x and the y columns
@@ -250,34 +310,56 @@ def get_image(image):
     return img_byte_arr.getvalue()
 
 
-def format_latitude(raw: float) -> str:
-    raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
-    abs = math.fabs(raw_degrees)
-    abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
-
-    hemisphere = 'S' if raw_degrees < 0 else 'N'
-    degrees = "{:2.0f}".format(abs)
-    decimal_degrees = "{:3.0f}".format(abs_decimal)
-
-    return f"{hemisphere}{degrees}", decimal_degrees
+def format_latitude(raw: str) -> str:
+    # raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
+    # abs = math.fabs(raw_degrees)
+    # abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
 
 
-def format_longitude(raw: float) -> str:
-    raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
-    abs = math.fabs(raw_degrees)
-    abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
+    # hemisphere = 'S' if float(raw_degrees) < 0 else 'N'
+    # degrees = "{:2.0f}".format(int(raw_degrees))
+    # decimal_degrees = "{0:03d}".format(int(raw_decimal_degrees))
+    raw_degrees, raw_decimal_degrees = raw.split('.')
+    if float(raw_degrees) < 0:
+        hemisphere = 'S'
+        raw_degrees = raw_degrees[1:]
+    else:
+        hemisphere = 'N'
+    degrees = f'{raw_degrees:02}'
+    decimal_degrees = f'{raw_decimal_degrees:03}'
 
-    hemisphere = 'W' if raw_degrees < 0 else 'E'
-    degrees = "{:3.0f}".format(abs)
-    decimal_degrees = "{:3.0f}".format(abs_decimal)
+    joining_character = '' if float(raw_degrees) < 0 else '-'
 
-    return f"{hemisphere}{degrees}", decimal_degrees
+    return f"{hemisphere}{degrees}{joining_character}{decimal_degrees}"
+
+
+def format_longitude(raw: str) -> str:
+    # raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
+    # abs = math.fabs(raw_degrees)
+    # abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
+    #
+    # hemisphere = 'W' if raw_degrees < 0 else 'E'
+    # degrees = "{:3.0f}".format(abs)
+    # decimal_degrees = "{:3.0f}".format(abs_decimal)
+
+    raw_degrees, raw_decimal_degrees = raw.split('.')
+    if float(raw_degrees) < 0:
+        hemisphere = 'W'
+        raw_degrees = raw_degrees[1:]
+    else:
+        hemisphere = 'E'
+    degrees = f'{raw_degrees:03}'
+    decimal_degrees = f'{raw_decimal_degrees:03}'
+
+    joining_character = '' if float(raw_degrees) < 0 else '-'
+
+    return f"{hemisphere}{degrees}{joining_character}{decimal_degrees}"
 
 
 def generate_file_name(metadata) -> str:
     """Generates a file name from the provided metadata"""
 
-    return f'{metadata["sat_id"]}_{metadata["file_class"]}_{metadata["product_type"]}_{metadata["formatted_timestamp"]}_{metadata["formatted_latitude"][0]}-{metadata["formatted_latitude"][1]}_{metadata["formatted_longitude"][0]}-{metadata["formatted_longitude"][1]}'
+    return f'{metadata["sat_id"]}_{metadata["file_class"]}_{metadata["product_type"]}_{metadata["formatted_timestamp"]}_{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}'
 
 
 def get_file_size(path):
@@ -305,7 +387,6 @@ def calculate_angles(metadata):
     https://www.pveducation.org/pvcdrom/properties-of-sunlight/elevation-angle
     https://gml.noaa.gov/grad/solcalc/solareqns.PDF
     """
-
 
     timestamp = metadata['timestamp']
     latitude = float(metadata['chris_latitude'])
@@ -358,6 +439,7 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         file_size = get_file_size(file)
 
         # TODO: verify that all the required inputs are in the metadata file
+        check_metadata(raw_metadata)
 
         raw_metadata['chris_latitude'] = raw_metadata['chris_lattitude']
 
@@ -366,8 +448,8 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         raw_metadata["sat_id"] = sat_id
         raw_metadata["file_class"] = file_class
         raw_metadata["product_type"] = mode_to_product_type[raw_metadata['chris_chris_mode'].lower()]
-        raw_metadata["formatted_latitude"] = format_latitude(raw_metadata['center_lat'])
-        raw_metadata["formatted_longitude"] = format_longitude(raw_metadata['center_lon'])
+        raw_metadata["formatted_latitude"] = format_latitude(raw_metadata['chris_latitude'])
+        raw_metadata["formatted_longitude"] = format_longitude(raw_metadata['chris_longitude'])
 
         timestamp = datetime.strptime(
             f"{raw_metadata['chris_image_date_yyyy_mm_dd_']} {raw_metadata['chris_calculated_image_centre_time']}",
