@@ -56,15 +56,15 @@ def check_metadata(metadata: dict):
         'chris_lattitude': r'[-]?\d{3}.\d{2}',
         'chris_longitude': r'[-]?\d{3}.\d{2}',
         'chris_chris_mode': r'[1-5]|hrc',
-        'chris_image_date_yyyy_mm_dd_': r'[A-z0-9-:\s]+',
+        'chris_image_date_yyyy_mm_dd_': r'[A-z0-9-\s]+',
         'chris_calculated_image_centre_time': r'[A-z0-9-:\s]+'
     }
 
-    numeric_checks = {
+    numeric_string_checks = {
         'chris_lattitude': [-90, 90],
         'chris_longitude': [-180, 180]
     }
-    datetime_checks = {
+    datetime_string_checks = {
         'chris_image_date_yyyy_mm_dd_': '%Y-%m-%d',
         'chris_calculated_image_centre_time': '%H:%M:%S',
     }
@@ -73,33 +73,42 @@ def check_metadata(metadata: dict):
     invalid_values = set()
 
     for key in regex_checks.keys():
-       if not metadata.get(key):
-            missing_values.add(key)
-            break
-
-       if not re.match(regex_checks[key], metadata[key]):
-            invalid_values.add(key)
-
-
-    for key in numeric_checks.keys():
-        if not metadata.get(key):
-            missing_values.add(key)
-            break
-
-        min_value, max_value = numeric_checks[key]
-        value = metadata[key]
-        if type(value) is str:
-            value = float(value)
-        if not min_value <= value <= max_value:
-            invalid_values.add(key)
-
-    for key in datetime_checks.keys():
         if not metadata.get(key):
             missing_values.add(key)
             break
 
         try:
-            datetime.strptime(metadata[key], datetime_checks[key])
+            if not re.match(regex_checks[key], metadata[key]):
+                invalid_values.add(key)
+        except TypeError:
+            invalid_values.add(key)
+
+
+    for key in numeric_string_checks.keys():
+        if not metadata.get(key):
+            missing_values.add(key)
+            break
+
+        min_value, max_value = numeric_string_checks[key]
+        value = metadata[key]
+        try:
+            if type(value) is not str:
+                invalid_values.add(key)
+                break
+            value = float(value)
+            if not min_value <= value <= max_value:
+                invalid_values.add(key)
+
+        except ValueError:
+            invalid_values.add(key)
+
+    for key in datetime_string_checks.keys():
+        if not metadata.get(key):
+            missing_values.add(key)
+            break
+
+        try:
+            datetime.strptime(metadata[key], datetime_string_checks[key])
         except ValueError:
             invalid_values.add(key)
 
