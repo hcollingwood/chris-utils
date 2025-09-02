@@ -1,10 +1,12 @@
 import logging
 import os
 
+
+
 def get_list_of_files(inputs):
     files = []
-    error_message = "%s not recognised. Ensure that path is valid"
-    for i in inputs:
+
+    def process_input(i):
         if os.path.isfile(i):
             files.append(i)
         elif os.path.isdir(i):
@@ -14,9 +16,15 @@ def get_list_of_files(inputs):
                 files.append(i)
             else:
                 for file in os.listdir(i):
-                    files.append(f"{i}/{file}")
+                    item_path = os.path.join(i, file)
+                    files.append(item_path)
 
-        else:
+
+    error_message = "%s not recognised. Ensure that path is valid"
+    for i in inputs:
+        process_input(i)
+
+        if i not in files:
             logging.error(error_message, i)
 
     return files
