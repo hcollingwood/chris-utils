@@ -55,9 +55,12 @@ def check_metadata(metadata: dict):
     regex_checks = {
         'chris_lattitude': r'[-]?\d{3}.\d{2}',
         'chris_longitude': r'[-]?\d{3}.\d{2}',
-        'chris_chris_mode': r'[1-5]|hrc',
+        'chris_chris_mode': r'([1-5]|hrc)',
         'chris_image_date_yyyy_mm_dd_': r'[A-z0-9-\s]+',
-        'chris_calculated_image_centre_time': r'[A-z0-9-:\s]+'
+        'chris_calculated_image_centre_time': r'[A-z0-9-:\s]+',
+    }
+    list_checks = {
+        'wavelength': float,
     }
 
     numeric_string_checks = {
@@ -78,9 +81,23 @@ def check_metadata(metadata: dict):
             break
 
         try:
-            if not re.match(regex_checks[key], metadata[key]):
+            if not re.match(f"^{regex_checks[key]}$", metadata[key]):
                 invalid_values.add(key)
         except TypeError:
+            invalid_values.add(key)
+
+
+    for key in list_checks.keys():
+        if not metadata.get(key):
+            missing_values.add(key)
+            break
+
+        var_type = list_checks[key]
+        try:
+            if not all([type(x) == var_type for x in metadata[key]]):
+                invalid_values.add(key)
+
+        except ValueError:
             invalid_values.add(key)
 
 
@@ -269,7 +286,7 @@ def get_band_index(colour, wavelengths):
 
 
 def generate_metadata(file_identifier, data=None, metadata: dict=None, image=None, report=None):
-    # TODO: check inputs and update/remove is not needed
+    # TODO: check inputs and update/remove if not needed
     xml = EarthObservation(id=file_identifier, data=metadata).to_xml(
         pretty_print=True,
         encoding='UTF-8',
@@ -329,17 +346,17 @@ def format_latitude(raw: str) -> str:
     # degrees = "{:2.0f}".format(int(raw_degrees))
     # decimal_degrees = "{0:03d}".format(int(raw_decimal_degrees))
     raw_degrees, raw_decimal_degrees = raw.split('.')
+    decimal_degrees = int(float(f"0.{raw_decimal_degrees}") * 1000)
+
     if float(raw_degrees) < 0:
         hemisphere = 'S'
         raw_degrees = raw_degrees[1:]
     else:
         hemisphere = 'N'
-    degrees = f'{raw_degrees:02}'
-    decimal_degrees = f'{raw_decimal_degrees:03}'
+    degrees = f'{int(raw_degrees):02}'
+    decimal_degrees = f'{decimal_degrees:03}'
 
-    joining_character = '' if float(raw_degrees) < 0 else '-'
-
-    return f"{hemisphere}{degrees}{joining_character}{decimal_degrees}"
+    return f"{hemisphere}{degrees}-{decimal_degrees}"
 
 
 def format_longitude(raw: str) -> str:
@@ -352,17 +369,17 @@ def format_longitude(raw: str) -> str:
     # decimal_degrees = "{:3.0f}".format(abs_decimal)
 
     raw_degrees, raw_decimal_degrees = raw.split('.')
+    decimal_degrees = int(float(f"0.{raw_decimal_degrees}") * 1000)
+
     if float(raw_degrees) < 0:
         hemisphere = 'W'
         raw_degrees = raw_degrees[1:]
     else:
         hemisphere = 'E'
     degrees = f'{raw_degrees:03}'
-    decimal_degrees = f'{raw_decimal_degrees:03}'
+    decimal_degrees = f'{decimal_degrees:03}'
 
-    joining_character = '' if float(raw_degrees) < 0 else '-'
-
-    return f"{hemisphere}{degrees}{joining_character}{decimal_degrees}"
+    return f"{hemisphere}{degrees}-{decimal_degrees}"
 
 
 def generate_file_name(metadata) -> str:

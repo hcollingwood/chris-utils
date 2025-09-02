@@ -1,4 +1,4 @@
-from chris_utils.eo_sip.eo_sip_converter import check_metadata
+from chris_utils.eo_sip.eo_sip_converter import check_metadata, format_latitude, format_longitude
 import pytest
 
 @pytest.fixture()
@@ -58,6 +58,32 @@ def test_check_metadata__datetime_fail(field, value, mock_metadata):
     ],
 )
 def test_check_metadata__datetime_pass(field, value, mock_metadata):
+
+    check_metadata(mock_metadata)
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        pytest.param('wavelength', [1, 'b', 3, 'd', 5]),
+    ],
+)
+def test_check_metadata__list_fail(field, value, mock_metadata):
+
+    mock_metadata[field] = value
+    with pytest.raises(Exception) as err:
+        check_metadata(mock_metadata)
+
+    assert 'Invalid metadata detected' in str(err.value)
+    assert field in str(err.value)
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        pytest.param('wavelength', [1, 2, 3, 4, 5]),
+
+    ],
+)
+def test_check_metadata__list_pass(field, value, mock_metadata):
 
     check_metadata(mock_metadata)
 
@@ -133,3 +159,35 @@ def test_check_metadata__numeric_pass(field, value, mock_metadata):
 
     mock_metadata[field] = value
     check_metadata(mock_metadata)
+
+
+@pytest.mark.parametrize(
+    "raw,expected_format",
+    [
+        pytest.param('012.34', 'N12-340'),
+        pytest.param('-012.34', 'S12-340'),
+        pytest.param('-012.034', 'S12-034'),
+    ],
+)
+def test_format_latitude__pass(raw, expected_format):
+
+    formatted = format_latitude(raw)
+    assert formatted == expected_format
+
+
+@pytest.mark.parametrize(
+    "raw,expected_format",
+    [
+        pytest.param('012.34', 'E012-340'),
+        pytest.param('123.456', 'E123-456'),
+        pytest.param('-012.34', 'W012-340'),
+        pytest.param('-012.034', 'W012-034'),
+    ],
+)
+def test_format_longitude__pass(raw, expected_format):
+
+    formatted = format_longitude(raw)
+    assert formatted == expected_format
+
+
+
