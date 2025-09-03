@@ -7,8 +7,16 @@ import shutil
 from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
 from chris_utils.safe.safe_metadata_xml_generator import XFDU
 
+valid_package_types = [
+    "RPI-BAS",
+    "RPI-DAT",
+    "RPI-MTD",
+    "COL-MTD",
+    "DAT-PRD",
+    "DAT-AUX",
+]
 
-def calculate_checksum(data: str) -> str:
+def calculate_crc_checksum(data: str) -> str:
     """Uses CRC-16 checksums"""
     crc = binascii.crc_hqx(data.encode("utf-8"), 0xFFFF)
 
@@ -57,14 +65,6 @@ def make_safe(inputs: str, output: str = '.', package_type:str=None, mode:str="1
 
         package_type_tag = ""
         if package_type := package_type:
-            valid_package_types = [
-                "RPI-BAS",
-                "RPI-DAT",
-                "RPI-MTD",
-                "COL-MTD",
-                "DAT-PRD",
-                "DAT-AUX",
-            ]
             if package_type not in valid_package_types:
                 raise Exception(
                     f"Package type {package_type} not in {valid_package_types}"
@@ -73,7 +73,7 @@ def make_safe(inputs: str, output: str = '.', package_type:str=None, mode:str="1
 
         metadata = make_file_metadata(paths)
 
-        checksum = calculate_checksum(metadata)
+        checksum = calculate_crc_checksum(metadata)
 
         if os.path.isabs(file):
             output_root = f"{output}/{file.split('/')[-1]}"

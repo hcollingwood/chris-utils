@@ -82,7 +82,7 @@ class InformationPackageMap(BaseXmlModel, tag="informationPackageMap", ns=""):
     # pass
 
 
-def calculate_checksum(file_path: str):
+def calculate_md5_checksum(file_path: str):
     with open(file_path, "rb") as f:
         data = f.read()
         return hashlib.md5(data).hexdigest()
@@ -113,7 +113,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
             for data_object in data_objects:
                 logging.info(data_object)
                 checksum = Checksum(
-                    checksum_name="MD5", value=calculate_checksum(data_object)
+                    checksum_name="MD5", value=calculate_md5_checksum(data_object)
                 )
                 file_location = FileLocation(
                     locator_type="URL",
