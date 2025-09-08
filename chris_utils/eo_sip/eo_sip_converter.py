@@ -16,7 +16,6 @@ import pandas as pd
 
 import rasterio
 
-from chris_utils.eo_sip import other
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
 from chris_utils.utils import get_list_of_files
