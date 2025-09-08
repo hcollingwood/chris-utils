@@ -1,6 +1,7 @@
 import argparse
 import calendar
 import io
+import json
 import os
 import logging
 import re
@@ -15,6 +16,7 @@ import pandas as pd
 
 import rasterio
 
+from chris_utils.eo_sip import other
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
 from chris_utils.utils import get_list_of_files
@@ -53,8 +55,8 @@ def acos_deg(angle):
 
 def check_metadata(metadata: dict):
     regex_checks = {
-        'chris_lattitude': r'[-]?\d{3}.\d{2}',
-        'chris_longitude': r'[-]?\d{3}.\d{2}',
+        'chris_lattitude': r'[-]?\d+.\d+',
+        'chris_longitude': r'[-]?\d+.\d+',
         'chris_chris_mode': r'([1-5]|hrc)',
         'chris_image_date_yyyy_mm_dd_': r'[A-z0-9-\s]+',
         'chris_calculated_image_centre_time': r'[A-z0-9-:\s]+',
@@ -135,34 +137,102 @@ def check_metadata(metadata: dict):
         raise Exception(f"Invalid metadata detected: {invalid_values}")
 
 
+# def process_cog_old(path):
+#     with rasterio.open(path) as dataset:
+#         metadata = dataset.meta
+#         # print(metadata)
+#         # print(dataset.profile)
+#         # data = metadata.read(1) ## band 1
+#         # views = dataset.overviews(1)
+#
+#         # r_band, g_band, b_band = get_bands(metadata.coords["wavelength"].values)
+#         r_band, g_band, b_band = 1, 2, 3
+#         # import sys;sys.exit()
+#
+#         # view = views[-1]
+#         # thumbnail_r = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
+#         # thumbnail_g = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
+#         # thumbnail_b = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
+#
+#         thumbnail_r = dataset.read(r_band)
+#         thumbnail_g = dataset.read(g_band)
+#         thumbnail_b = dataset.read(b_band)
+#
+#         thumbnail_rgb = make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b)
+#
+#
+#         data_file_name = path.split('/')[-1]
+#         file_data = open(path, 'rb').read()
+#
+#         return dataset, metadata, thumbnail_rgb, [(data_file_name, file_data)]
+
 def process_cog(path):
-    with rasterio.open(path) as dataset:
-        metadata = dataset.meta
-        # print(metadata)
-        # print(dataset.profile)
-        # data = metadata.read(1) ## band 1
-        # views = dataset.overviews(1)
+    with open(f"{path}/attrs.json") as f:
+        metadata = json.load(f)
 
-        # r_band, g_band, b_band = get_bands(metadata.coords["wavelength"].values)
-        r_band, g_band, b_band = 1, 2, 3
-        # import sys;sys.exit()
+    r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
-        # view = views[-1]
-        # thumbnail_r = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
-        # thumbnail_g = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
-        # thumbnail_b = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
+    longest_group, _, files = max(os.walk(path))
+    files = sorted([file for file in files if file.endswith('.tif')])
 
-        thumbnail_r = dataset.read(r_band)
-        thumbnail_g = dataset.read(g_band)
-        thumbnail_b = dataset.read(b_band)
-
-        thumbnail_rgb = make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b)
+    red_file = files[r_band]
+    green_file = files[g_band]
+    blue_file = files[b_band]
 
 
-        data_file_name = path.split('/')[-1]
-        file_data = open(path, 'rb').read()
+    with rasterio.open(f"{longest_group}/{red_file}") as dataset:
+        thumbnail_r = dataset.read(1)
+    with rasterio.open(f"{longest_group}/{green_file}") as dataset:
+        thumbnail_g = dataset.read(1)
+    with rasterio.open(f"{longest_group}/{blue_file}") as dataset:
+        thumbnail_b = dataset.read(1)
 
-        return dataset, metadata, thumbnail_rgb, [(data_file_name, file_data)]
+    scaled_thumbnail_r, scaled_thumbnail_g, scaled_thumbnail_b = normalise_image([thumbnail_r, thumbnail_g, thumbnail_b])
+
+    thumbnail_rgb = make_rgb_thumbnail(scaled_thumbnail_r, scaled_thumbnail_g, scaled_thumbnail_b)
+
+
+    file_data = []
+    file_root = '/'.join(path.rsplit('/')[:-1])
+    for root_path, dirs, files in os.walk(path):
+        for file in files:
+            file_path = os.path.join(root_path, file)
+            if os.path.isfile(file_path):
+                binary_data = open(file_path, 'rb').read()
+                file_data.append([file_path.replace(file_root, ""), binary_data])
+
+    data = 3
+    # TODO: find how this is generated / what needs to be in it, remove if needed
+    return data, metadata, thumbnail_rgb, file_data
+
+
+def normalise_image(bands: list):
+
+    # normalise everything together
+    # min_value = min([band.min() for band in bands])
+    # bands = [band - min_value for band in bands]
+    #
+    # new_max_value = max([band.max() for band in bands])
+    # bands = [(1 / new_max_value) * band for band in bands]
+    #
+    # lo = min([np.quantile(band, 0.001) for band in bands])
+    # hi = max([np.quantile(band, 0.999) for band in bands])
+    # # lo = min([np.quantile(band, 0.02) for band in bands])
+    # # hi = max([np.quantile(band, 0.98) for band in bands])
+    # bands = [(((band - lo) / (hi - lo)).clip(0, 1).astype("float32")) for band in bands]
+    #
+    # return bands
+
+    # normalise individual bands
+    new_bands = []
+    for band in bands:
+        lo = np.quantile(band, 0.025)
+        hi = np.quantile(band, 0.995)
+        band = ((band - lo) / (hi - lo)).clip(0, 1).astype("float32")
+
+        new_bands.append(band)
+
+    return new_bands
 
 
 # def process_zarr_old(path):
@@ -230,7 +300,10 @@ def process_zarr(path):
     thumbnail_g = thumbnail_data_g.pivot(index='y', columns='x', values=g_column).to_numpy()
     thumbnail_b = thumbnail_data_b.pivot(index='y', columns='x', values=b_column).to_numpy()
 
-    thumbnail_rgb = make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b)
+    scaled_thumbnail_r, scaled_thumbnail_g, scaled_thumbnail_b = normalise_image(
+        [thumbnail_r, thumbnail_g, thumbnail_b])
+    thumbnail_rgb = make_rgb_thumbnail(scaled_thumbnail_r, scaled_thumbnail_g, scaled_thumbnail_b)
+    # thumbnail_rgb = make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b)
 
     file_data = []
     file_root = '/'.join(path.rsplit('/')[:-1])
@@ -331,7 +404,7 @@ def make_image(data, file_name):
 def get_image(image):
     image = (image * 255).astype(np.uint8)
     img_byte_arr = io.BytesIO()
-    im = Image.fromarray(image)
+    im = Image.fromarray(image, mode="RGB")
     im.save(img_byte_arr, format="PNG")
     return img_byte_arr.getvalue()
 
@@ -444,7 +517,7 @@ def calculate_angles(metadata):
     return azimuth_deg, elevation_deg
 
 
-def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=None, sat_id: str="PR1", file_class:str="OPER"):
+def convert_eo_sip(inputs: str, output: str='.', extras:str=None, sat_id: str="PR1", file_class:str="OPER"):
 
     if not os.path.exists(output):
         os.makedirs(output)
@@ -453,8 +526,9 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
     for file in files:
         logging.info(f"Processing {file}")
         if file.lower().endswith('.zarr'):  # try as ZARR
+
             raw_data, raw_metadata, image, file_data = process_zarr(file)
-        elif file.lower().endswith('.tif'):  # try as COG
+        elif file.lower().endswith('.cog'):  # try as COG
             raw_data, raw_metadata, image, file_data = process_cog(file)
         else:
             raise Exception("File type not recognised")
@@ -488,7 +562,7 @@ def convert_eo_sip(inputs: str, output: str='.', version:str=None, extras:str=No
         raw_metadata['illumination_azimuth_angle'], raw_metadata['illumination_elevation_angle'] = calculate_angles(raw_metadata)
 
 
-        version = version if version else get_version(file_name_root, output)
+        version = get_version(file_name_root, output)
         file_name = f'{file_name_root}_{version}'
 
         xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)
