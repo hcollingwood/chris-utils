@@ -208,12 +208,8 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 name="measurementType",
                 sequence=Sequence(elements=measurement_complex_element),
             ),
-            ComplexType(
-                name="lineType", sequence=Sequence(elements=line_complex_element)
-            ),
-            ComplexType(
-                name="videoLineType", sequence=Sequence(elements=minor_frame_element_1)
-            ),
+            ComplexType(name="lineType", sequence=Sequence(elements=line_complex_element)),
+            ComplexType(name="videoLineType", sequence=Sequence(elements=minor_frame_element_1)),
             ComplexType(
                 name="minorFrameType",
                 sequence=Sequence(elements=minor_frame_complex_element),
@@ -234,7 +230,7 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
             element=element,
             complex_type=complex_type,
             # version=version, sip_creator=sip_creator, sip_creation_time=sip_creation_time,
-            **data
+            **data,
         )
 
 

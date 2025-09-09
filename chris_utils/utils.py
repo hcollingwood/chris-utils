@@ -2,7 +2,6 @@ import logging
 import os
 
 
-
 def get_list_of_files(inputs):
     files = []
 
@@ -13,9 +12,9 @@ def get_list_of_files(inputs):
         #     files.append(i)
         #     print(i, "file")
         if os.path.isdir(i):
-            if i.lower().endswith('.zarr') or i.lower().endswith('.cog'):
+            if i.lower().endswith(".zarr") or i.lower().endswith(".cog"):
                 files.append(i)
-            elif i.endswith('.SAFE'):
+            elif i.endswith(".SAFE"):
                 files.append(i)
             else:
                 for file in os.listdir(i):

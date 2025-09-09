@@ -4,7 +4,6 @@ from typing import Optional
 
 from pydantic_xml import BaseXmlModel, attr, element
 
-
 namespaces = {
     "xfdu": "urn:ccsds:schema:xfdu:1",
     "xsi": "http://www.w3.org/2001/XMLSchema-instance",
@@ -112,9 +111,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
         if data_objects:
             for data_object in data_objects:
                 logging.info(data_object)
-                checksum = Checksum(
-                    checksum_name="MD5", value=calculate_md5_checksum(data_object)
-                )
+                checksum = Checksum(checksum_name="MD5", value=calculate_md5_checksum(data_object))
                 file_location = FileLocation(
                     locator_type="URL",
                     text_info="Measurement Data",

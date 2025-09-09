@@ -13,9 +13,7 @@ namespaces = {
 }
 
 
-class SpecificInformation(
-    BaseXmlModel, ns="eop", nsmap=namespaces, tag="SpecificInformation"
-):
+class SpecificInformation(BaseXmlModel, ns="eop", nsmap=namespaces, tag="SpecificInformation"):
     local_attribute: str = element(tag="localAttribute")
     local_value: str = element(tag="localValue")
 
@@ -46,9 +44,7 @@ class RequestMessage(BaseXmlModel, ns="ows", tag="RequestMessage"):
     pass
 
 
-class ServiceReference(
-    BaseXmlModel, ns="ows", nsmap=namespaces, tag="ServiceReference"
-):
+class ServiceReference(BaseXmlModel, ns="ows", nsmap=namespaces, tag="ServiceReference"):
     href: str = attr(ns="xlink")
     request_message: RequestMessage
 
@@ -57,9 +53,7 @@ class FileName(BaseXmlModel, ns="eop", nsmap=namespaces, tag="fileName"):
     service_reference: ServiceReference
 
 
-class ProductInformation(
-    BaseXmlModel, ns="eop", nsmap=namespaces, tag="ProductInformation"
-):
+class ProductInformation(BaseXmlModel, ns="eop", nsmap=namespaces, tag="ProductInformation"):
     file_name: FileName
     size: Size = element
 
@@ -138,23 +132,15 @@ class Acquisition(BaseXmlModel, ns="eop", nsmap=namespaces, tag="Acquisition"):
     orbit_number: str = element(tag="orbitNumber")
     wrs_longitude_grid: WrsGrid = element(tag="wrsLongitudeGrid")
     wrs_latitude_grid: WrsGrid = element(tag="wrsLatitudeGrid")
-    illumination_azimuth_angle: IlluminationAngle = element(
-        tag="illuminationAzimuthAngle"
-    )
-    illumination_elevation_angle: IlluminationAngle = element(
-        tag="illuminationElevationAngle"
-    )
+    illumination_azimuth_angle: IlluminationAngle = element(tag="illuminationAzimuthAngle")
+    illumination_elevation_angle: IlluminationAngle = element(tag="illuminationElevationAngle")
 
 
-class AcquisitionParameters(
-    BaseXmlModel, ns="eop", nsmap=namespaces, tag="acquisitionParameters"
-):
+class AcquisitionParameters(BaseXmlModel, ns="eop", nsmap=namespaces, tag="acquisitionParameters"):
     parameters: Acquisition
 
 
-class SensorOperationalMode(
-    BaseXmlModel, ns="eop", nsmap=namespaces, tag="operationalMode"
-):
+class SensorOperationalMode(BaseXmlModel, ns="eop", nsmap=namespaces, tag="operationalMode"):
     code_space: str = attr(name="codeSpace")
     value: str = element
 
@@ -235,9 +221,7 @@ class ObservedProperty(BaseXmlModel, ns="om", nsmap=namespaces, tag="observedPro
     nil: str = attr(ns="xsi")
 
 
-class FeatureOfInterest(
-    BaseXmlModel, ns="om", nsmap=namespaces, tag="featureOfInterest"
-):
+class FeatureOfInterest(BaseXmlModel, ns="om", nsmap=namespaces, tag="featureOfInterest"):
     footprint: Footprint
 
 
@@ -245,9 +229,7 @@ class Result(BaseXmlModel, ns="om", nsmap=namespaces, tag="result"):
     earth_observation_result: EarthObservationResult
 
 
-class MetaDataProperty(
-    BaseXmlModel, ns="eop", nsmap=namespaces, tag="metaDataProperty"
-):
+class MetaDataProperty(BaseXmlModel, ns="eop", nsmap=namespaces, tag="metaDataProperty"):
     earth_observation_meta_data: EarthObservationMetaData
 
 
@@ -262,8 +244,8 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
     meta_data_property: MetaDataProperty
 
     def __init__(self, id: str, **data):
-        metadata = data['data']
-        begin_position = BeginPosition(position=metadata['timestamp'])
+        metadata = data["data"]
+        begin_position = BeginPosition(position=metadata["timestamp"])
         end_position = EndPosition(position=datetime(year=1970, month=1, day=1))
         time_position = TimePosition(position=datetime(year=1970, month=1, day=1))
         sensor_short_name = "PROBA"
@@ -274,21 +256,19 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         operational_mode = f"MODE-{metadata['chris_chris_mode']}"
         orbit_number = "000000*"
         wrs_longitude_grid_code_space = "urn:esa:eop:PROBA:TileColumn"
-        wrs_longitude_grid = metadata['formatted_longitude'][0]
+        wrs_longitude_grid = metadata["formatted_longitude"][0]
         wrs_latitude_grid_code_space = "urn:esa:eop:PROBA:TileRow"
-        wrs_latitude_grid = metadata['formatted_latitude'][0]
+        wrs_latitude_grid = metadata["formatted_latitude"][0]
         uom_deg = "deg"
-        illumination_azimuth_angle = metadata['illumination_azimuth_angle']
-        illumination_elevation_angle = metadata['illumination_elevation_angle']
-        pos_list = (
-            "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"
-        )   #aoi box  leave for now
-        pos = "0.0045000384979* 113.206" # leave for now
+        illumination_azimuth_angle = metadata["illumination_azimuth_angle"]
+        illumination_elevation_angle = metadata["illumination_elevation_angle"]
+        pos_list = "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"  # aoi box  leave for now
+        pos = "0.0045000384979* 113.206"  # leave for now
         eo_sip_file_name = f"{id}.SIP.ZIP"
         uom_bytes = "bytes"
-        file_size = metadata['file_size']
+        file_size = metadata["file_size"]
         acquisition_type = "NOMINAL"
-        product_type = data['data']['product_type']
+        product_type = data["data"]["product_type"]
         status = "ARCHIVED"
         vendor_specific_data = [  # leave for now
             ("originalName", "CHRIS_PA_151114_1E77_41*"),
@@ -300,9 +280,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         for key, value in vendor_specific_data:
             vendor_specific_list.append(
                 VendorSpecific(
-                    specific_information=SpecificInformation(
-                        local_attribute=key, local_value=value
-                    )
+                    specific_information=SpecificInformation(local_attribute=key, local_value=value)
                 )
             )
 
@@ -367,9 +345,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
                             polygon=Polygon(
                                 id=f"{id}_7",
                                 exterior=Exterior(
-                                    linear_ring=LinearRing(
-                                        pos_list=PosList(value=pos_list)
-                                    )
+                                    linear_ring=LinearRing(pos_list=PosList(value=pos_list))
                                 ),
                             )
                         ),
@@ -420,8 +396,8 @@ if __name__ == "__main__":
     file_id = "PR1_OPER_CHR_MO3_1P_20100328T011431_N01-800_W078-260_0001"
     parent_instance = EarthObservation(id=file_id)
 
-    xml = parent_instance.to_xml(
-        pretty_print=False, encoding="UTF-8", standalone=True
-    ).decode("utf-8")
+    xml = parent_instance.to_xml(pretty_print=False, encoding="UTF-8", standalone=True).decode(
+        "utf-8"
+    )
 
     print("complete")

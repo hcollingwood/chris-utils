@@ -1,7 +1,7 @@
-import binascii
-import os
 import argparse
+import binascii
 import logging
+import os
 import shutil
 
 from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
@@ -15,6 +15,7 @@ valid_package_types = [
     "DAT-PRD",
     "DAT-AUX",
 ]
+
 
 def calculate_crc_checksum(data: str) -> str:
     """Uses CRC-16 checksums"""
@@ -45,7 +46,14 @@ def copy_mos_file(output_file_path) -> None:
     shutil.copy(f"chris_utils/safe/{mos_file_name}", f"{output_file_path}/{mos_file_name}")
 
 
-def make_safe(inputs: str, output: str = '.', package_type:str=None, mode:str="1", file_class:str="OPER", sat_id="PR1"):
+def make_safe(
+    inputs: str,
+    output: str = ".",
+    package_type: str = None,
+    mode: str = "1",
+    file_class: str = "OPER",
+    sat_id="PR1",
+):
     """Generates SAFE archive for specified input file(s)"""
 
     # TODO: update/remove any unused input variables
@@ -66,9 +74,7 @@ def make_safe(inputs: str, output: str = '.', package_type:str=None, mode:str="1
         package_type_tag = ""
         if package_type := package_type:
             if package_type not in valid_package_types:
-                raise Exception(
-                    f"Package type {package_type} not in {valid_package_types}"
-                )
+                raise Exception(f"Package type {package_type} not in {valid_package_types}")
             package_type_tag = f"_{package_type}"
 
         metadata = make_file_metadata(paths)
@@ -121,4 +127,11 @@ if __name__ == "__main__":
     parser.add_argument("--package_type", help="type of package", default=None)
     args, unknown = parser.parse_known_args()
 
-    make_safe(inputs=args.inputs, output=args.output, package_type=args.package_type, mode=args.mode, file_class=args.file_class, sat_id=args.sat_id)
+    make_safe(
+        inputs=args.inputs,
+        output=args.output,
+        package_type=args.package_type,
+        mode=args.mode,
+        file_class=args.file_class,
+        sat_id=args.sat_id,
+    )
