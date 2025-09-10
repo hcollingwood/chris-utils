@@ -94,6 +94,20 @@ class RCIReader:
         else:
             raise ValueError(f"Unsupported interleave: {self.interleave}")
 
+        # Grab the full wavelength list from the header
+        # Decide if we should drop a leading calibration/dark plane
+        all_wavelengths = self.header.get("wavelength")
+
+        if (
+                isinstance(all_wavelengths, (list, tuple))
+                and len(all_wavelengths) == self.bands
+                and float(all_wavelengths[0]) == 0.0
+        ):
+            # Drop first plane and its 0.0 wavelength so arrays align
+            arr = arr[1:, :, :]
+            self.bands -= 1
+            all_wavelengths = list(all_wavelengths)[1:]
+
         # Build DataArray with wavelength coordinate
         coords = {
             "band": np.arange(1, self.bands + 1),
@@ -101,8 +115,6 @@ class RCIReader:
             "x": np.arange(self.width),
         }
 
-        # Grab the full wavelength list from the header
-        all_wavelengths = self.header.get("wavelength")
         if isinstance(all_wavelengths, (list, tuple)) and len(all_wavelengths) >= self.bands:
             # Attach the full list now; xarray will slice it if we subset bands later.
             coords["wavelength"] = ("band", all_wavelengths[: self.bands])
