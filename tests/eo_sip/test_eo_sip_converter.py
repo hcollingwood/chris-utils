@@ -60,7 +60,7 @@ def mock_metadata():
                 "start_datetime": "2004-04-11T18:18:16Z",
             }
         },
-        "wavelength": [
+        "all_wavelength": [
             0.0,
             442.5,
             491.1,
@@ -105,7 +105,7 @@ def test_check_metadata__missing_data_fail(field, mock_metadata):
     with pytest.raises(Exception) as err:
         check_metadata(mock_metadata)
 
-    assert "Missing metadata entries detected" in str(err.value)
+    assert "Missing metadata entries identified" in str(err.value)
     assert field in str(err.value)
 
 
@@ -126,7 +126,7 @@ def test_check_metadata__datetime_fail(field, value, mock_metadata):
     with pytest.raises(Exception) as err:
         check_metadata(mock_metadata)
 
-    assert "Invalid metadata detected" in str(err.value)
+    assert "Invalid metadata identified" in str(err.value)
     assert field in str(err.value)
 
 
@@ -145,7 +145,7 @@ def test_check_metadata__datetime_pass(field, value, mock_metadata):
 @pytest.mark.parametrize(
     "field,value",
     [
-        pytest.param("wavelength", [1, "b", 3, "d", 5]),
+        pytest.param("all_wavelength", [1, "b", 3, "d", 5]),
     ],
 )
 def test_check_metadata__list_fail(field, value, mock_metadata):
@@ -154,14 +154,14 @@ def test_check_metadata__list_fail(field, value, mock_metadata):
     with pytest.raises(Exception) as err:
         check_metadata(mock_metadata)
 
-    assert "Invalid metadata detected" in str(err.value)
+    assert "Invalid metadata identified" in str(err.value)
     assert field in str(err.value)
 
 
 @pytest.mark.parametrize(
     "field,value",
     [
-        pytest.param("wavelength", [1, 2, 3, 4, 5]),
+        pytest.param("all_wavelength", [1, 2, 3, 4, 5]),
     ],
 )
 def test_check_metadata__list_pass(field, value, mock_metadata):
@@ -190,7 +190,7 @@ def test_check_metadata__numeric_fail(field, value, mock_metadata):
     with pytest.raises(Exception) as err:
         check_metadata(mock_metadata)
 
-    assert "Invalid metadata detected" in str(err.value)
+    assert "Invalid metadata identified" in str(err.value)
     assert field in str(err.value)
 
 
@@ -224,7 +224,7 @@ def test_check_metadata__regex_fail(field, value, mock_metadata):
     with pytest.raises(Exception) as err:
         check_metadata(mock_metadata)
 
-    assert "Invalid metadata detected" in str(err.value)
+    assert "Invalid metadata identified" in str(err.value)
     assert field in str(err.value)
 
 
