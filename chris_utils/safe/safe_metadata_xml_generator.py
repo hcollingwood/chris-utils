@@ -97,9 +97,9 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
     def __init__(self, data_objects=None, **data):
         version = "esa/safe/2.0"
         schema_location = "urn:ccsds:schema:xfdu:1 xfdu.xsd"
-        file_id = "fileA"
-        file_name = "fileA_dfdl"
-        rep_id = "dfdlSAFEBaseSchema"
+        file_id = "CHRIS"
+        file_name = "CHRISSchema"
+        rep_id = f"{file_id}BaseSchema"
         # file_text_info = "FILE A DFDL Schema"
         # file_path = f"measurement/{file_name}.xsd"
         # data_object_mime_type = "application/octet-stream"
@@ -115,7 +115,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
                 file_location = FileLocation(
                     locator_type="URL",
                     text_info="Measurement Data",
-                    href=data_object.split("/")[-1],
+                    href=f"measurement/{data_object}",#.split("/")[-1],
                 )
                 byte_stream = ByteStream(
                     mime_type="application/octet-stream",
@@ -132,8 +132,8 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
 
         content_unit_inner = [
             ContentUnitInner(
-                unit_type="DFDL Schema",
-                id_content_unit="dfdlUnit",
+                unit_type="CHRIS data unit",
+                id_content_unit="measurementUnit",
                 rep_id=rep_id,
                 data_object_pointer=data_object_pointer,
             )
@@ -142,7 +142,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
             unit_type="SAFE Archive Information Package",
             text_info="SAFE Archive Information Package",
             id_content_unit="packageUnit",
-            dmd_id="class",
+            dmd_id="CHRIS sensor class",
             pdi_id="processing packageId",
             content_unit=content_unit_inner,
         )
@@ -187,7 +187,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
 
 
 if __name__ == "__main__":
-    parent_instance = XFDU()
+    parent_instance = XFDU(file_name = "myfile.zip")
 
     xml = parent_instance.to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
