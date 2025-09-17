@@ -1,18 +1,20 @@
 import argparse
 import binascii
-import datetime
 import logging
 import os
 import re
 import shutil
 import tempfile
 
-from chris_utils.eo_sip import process_zarr, process_cog
-from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
-from chris_utils.safe.mos_file_generator import Schema as MosSchema
-from chris_utils.safe.safe_metadata_xml_generator import XFDU
-# from chris_utils.safe.dat_xml_generator import Schema as DATSchema, Include, Annotation, Element, Documentation, Sequence, ComplexType, BlockEncoding,AppInfo,BlockLength,Block,BlockOccurrence
-from chris_utils.safe.metadata_config import dat_schema, txt_schema, hdr_schema, set_schema
+from chris_utils.eo_sip import process_cog, process_zarr
+from chris_utils.safe.metadata_config import (
+    dat_schema,
+    hdr_schema,
+    set_schema,
+    txt_schema,
+)
+from chris_utils.safe.measurement_metadata_generator import Schema as MosSchema
+from chris_utils.safe.manifest_xml_generator import XFDU
 from chris_utils.utils import get_version
 
 valid_package_types = [
@@ -24,13 +26,12 @@ valid_package_types = [
     "DAT-AUX",
 ]
 
-xml_schemas  = {
-    'dat': dat_schema(),
-    'txt': txt_schema(),
-    'hdr': hdr_schema(),
-    'set': set_schema(),
+xml_schemas = {
+    "dat": dat_schema(),
+    "txt": txt_schema(),
+    "hdr": hdr_schema(),
+    "set": set_schema(),
 }
-
 
 
 def calculate_crc_checksum(data: str) -> str:
@@ -40,7 +41,7 @@ def calculate_crc_checksum(data: str) -> str:
     return f"{crc:04X}"  # 4 hexadecimal characters
 
 
-def make_manifest(paths: list=None) -> str:
+def make_manifest(paths: list = None) -> str:
     """Generates manifest"""
 
     manifest = XFDU(data_objects=paths)
@@ -48,16 +49,6 @@ def make_manifest(paths: list=None) -> str:
     return manifest.to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
     ).decode("utf-8")
-
-
-# def make_metadata(timestamp: datetime.datetime) -> str:
-#     """Generates metadata"""
-#
-#     metadata = MosSchema(timestamp=timestamp)
-#
-#     return metadata.to_xml(
-#         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
-#     ).decode("utf-8")
 
 
 def make_xsd(file_type: str) -> str:
@@ -75,29 +66,35 @@ def write_index(metadata: str, path: str) -> None:
     with open(f"{path}/mos-object-types.xml", "w") as f:
         f.write(metadata)
 
+
 def write_manifest(metadata: str, path: str) -> None:
     """Writes metadata to manifest.xml in a given directory"""
-    with open(f"{path}/manifest.xml", "w") as f:
+    with open(f"{path}/MANIFEST.XML", "w") as f:
         f.write(metadata)
 
 
-def copy_mos_file(output_file_path) -> None:
-    """Copies mos-object-types.xsd file"""
-    mos_file_name = "mos-object-types.xsd"
-    shutil.copy(f"chris_utils/safe/{mos_file_name}", f"{output_file_path}/{mos_file_name}")
-
-
-
-
 def generate_file_name(metadata_file, suffix, output_dir):
-    if metadata_file.endswith('.zarr'):
+    if metadata_file.endswith(".zarr"):
         _, metadata, _, _ = process_zarr(metadata_file)
-    elif metadata_file.endswith('.cog'):
+    elif metadata_file.endswith(".cog"):
         _, metadata, _, _ = process_cog(metadata_file)
+    elif type(metadata_file) == dict:
+        metadata = metadata_file
+        if not (
+            "chris_image_date_yyyy_mm_dd_" in metadata.keys()
+            and "chris_calculated_image_centre_time" in metadata.keys()
+        ):
+            raise Exception(
+                "Required metadata not available. Needs chris_image_date_yyyy_mm_dd_ and chris_calculated_image_centre_time"
+            )
     else:
         raise Exception("File type not recognised")
 
-    timestamp = metadata['chris_image_date_yyyy_mm_dd_'] + "T" + metadata['chris_calculated_image_centre_time']
+    timestamp = (
+        metadata["chris_image_date_yyyy_mm_dd_"]
+        + "T"
+        + metadata["chris_calculated_image_centre_time"]
+    )
 
     root = f"CHRIS_{re.sub('[^0-9a-zA-Z]+', '', timestamp)}"
 
@@ -108,21 +105,14 @@ def generate_file_name(metadata_file, suffix, output_dir):
 
 def make_safe(
     inputs: str,
-    timestamp: datetime.datetime,
     metadata: str,
     output: str = ".",
     package_type: str = None,
-    mode: str = "1",
-    file_class: str = "OPER",
-    sat_id="PR1",
 ):
     """Generates SAFE archive for specified input file(s)"""
 
-    # TODO: update/remove any unused input variables
     if not os.path.exists(output):
         os.makedirs(output)
-
-    # zip_name = 'ZIP.zip'
 
     file_types = set()
     all_paths = []
@@ -144,17 +134,7 @@ def make_safe(
                 raise Exception(f"Package type {package_type} not in {valid_package_types}")
             package_type_tag = f"_{package_type}"
 
-        # metadata = make_metadata(timestamp)
-
-        # if os.path.isabs(file):
-        #     output_root = f"{output}/{file.split('/')[-1]}"
-        # else:
-        #     output_root = f"{output}/{file}"
-
-
         with tempfile.TemporaryDirectory() as temp_dir:
-
-
             logging.info(packaging_message, temp_dir)
 
             if not os.path.exists(temp_dir):
@@ -165,19 +145,13 @@ def make_safe(
             documentation_dir = f"{temp_dir}/documentation"  # these are optional
             index_dir = f"{temp_dir}/index"  # these are optional
             dir_list = [measurement_dir, metadata_dir, documentation_dir, index_dir]
+
             for d in dir_list:
                 if not os.path.exists(d):
                     os.makedirs(d)
 
-            # with tempfile.TemporaryDirectory() as tmp:
-                # zip_path = f"{tmp}/{zip_name}"
-                # with zipfile.ZipFile(zip_path, 'w') as zip:
-
-                    # for path in paths:
-                    #     zip.write(path)
-                        # file_name = path.split("/")[-1]
             for path in paths:
-                file_type = path.split('.')[-1]
+                file_type = path.split(".")[-1]
                 output_dat_path = f"{measurement_dir}/MEASUREMENT-{file_type}.dat"
                 shutil.copy(path, output_dat_path)
                 file_types.add(file_type)
@@ -185,45 +159,26 @@ def make_safe(
 
             for file_type in file_types:
                 try:
-                    xml = xml_schemas[file_type].to_xml(
-                        pretty_print=True,
-                        encoding="UTF-8",
-                        standalone=True,
-                        exclude_unset=True,
-                    ).decode("utf-8")
+                    xml = (
+                        xml_schemas[file_type]
+                        .to_xml(
+                            pretty_print=True,
+                            encoding="UTF-8",
+                            standalone=True,
+                            exclude_unset=True,
+                        )
+                        .decode("utf-8")
+                    )
 
                     output_xsd_path = f"{metadata_dir}/{file_type}.xsd"
                     with open(output_xsd_path, "w") as f:
                         f.write(xml)
                         all_paths.append(output_xsd_path)
 
-
                 except KeyError:
                     logging.error(f"Schema for {file_type} not found")
 
-            # measurement_xml = (
-            #     Schema(
-            #         target_namespace="http://www.esa.int/safe/1.2/mos",
-            #         xmlns="http://www.esa.int/safe/1.2/mos",
-            #     )
-            #     .to_xml(
-            #         pretty_print=True,
-            #         encoding="UTF-8",
-            #         standalone=True,
-            #         exclude_unset=True,
-            #     )
-            #     .decode("utf-8")
-            # )
-
-            # with open(f"{metadata_dir}/zip.xsd", "w") as f:
-            # f.write(measurement_xml)
-
-            # copy_mos_file(output_file_path, metadata)
-
             all_paths.sort()
-
-            # write_index(metadata, index_dir)
-
             manifest = make_manifest(all_paths)
             checksum = calculate_crc_checksum(manifest)
             output_file_ending = f"{package_type_tag}_{checksum}.SAFE"
@@ -231,8 +186,6 @@ def make_safe(
             output_file_name = generate_file_name(metadata, output_file_ending, output)
 
             output_file_path = f"{output}/{output_file_name}"
-
-            # output_file_path = f"_{output_file_ending}"
 
             if not os.path.exists(output_file_path):
                 os.makedirs(output_file_path)
@@ -248,18 +201,15 @@ def make_safe(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="EO-SIP")
     parser.add_argument("--inputs", help="list of input files", default=None)
-    parser.add_argument("--sat_id", help="satellite identifier", default="PR1")
-    parser.add_argument("--file_class", help="file class", default="OPER")
     parser.add_argument("--mode", help="mode", default="1")
     parser.add_argument("--output", help="output folder", default=".")
     parser.add_argument("--package_type", help="type of package", default=None)
+    parser.add_argument("--metadata", help="metadata", default=None)
     args, unknown = parser.parse_known_args()
 
     make_safe(
         inputs=args.inputs,
         output=args.output,
         package_type=args.package_type,
-        mode=args.mode,
-        file_class=args.file_class,
-        sat_id=args.sat_id,
+        metadata=args.metadata,
     )

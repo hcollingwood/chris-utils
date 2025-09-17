@@ -60,19 +60,6 @@ class ComplexType(BaseXmlModel, nsmap=namespaces, tag="complexType", ns="xs"):
     sequence: Sequence
 
 
-# class Documentation(BaseXmlModel, tag="documentation", ns="xs"):
-#     lang: str = attr(default="en")
-#     value: str = element
-
-# class Annotation(BaseXmlModel, nsmap=namespaces, tag="annotation", ns="xs"):
-#     documentation: Documentation
-
-# class Element(BaseXmlModel, tag="element", ns="xs"):
-#     name: str = attr()
-#     type: str = attr()
-#     annotation: Annotation
-
-
 class Include(BaseXmlModel, tag="include", ns="xs"):
     schema_location: str = attr(name="schemaLocation")
 
@@ -84,162 +71,50 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
     complex_type: list[ComplexType]
     include: Optional[Include] = element(default=None)
 
-    # def __init2__(self, **data):
-    #     measurement_complex_element = [
-    #         Element(
-    #             name="line",
-    #             type="lineType",
-    #             min_occurs="0",
-    #             max_occurs="unbounded",
-    #             annotation=Annotation(
-    #                 documentation=Documentation(
-    #                     lang="en", value="The Data Unit (line) is 6,184 bytes long"
-    #                 ),
-    #                 app_info=AppInfo(
-    #                     block=Block(
-    #                         encoding=BlockEncoding(value="BINARY"),
-    #                         length=BlockLength(value=6184),
-    #                         occurence=BlockOccurrence(value="unbounded"),
-    #                     )
-    #                 ),
-    #             ),
-    #         )
-    #     ]
-    #
-    #     line_complex_element = [
-    #         Element(
-    #             name="auxiliaryData",
-    #             type="auxiliaryDataType",
-    #             annotation=Annotation(
-    #                 documentation=Documentation(
-    #                     lang="en",
-    #                     value="The Auxiliary Data field is 40 bytes long (fixed length) and reports information extracted from the telemetry data during the Level0 processing.",
-    #                 ),
-    #                 app_info=AppInfo(
-    #                     block=Block(
-    #                         encoding=BlockEncoding(value="BINARY"),
-    #                         length=BlockLength(value=40),
-    #                     )
-    #                 ),
-    #             ),
-    #         ),
-    #         # Element(
-    #         #     name="videoLine",
-    #         #     type="videoLineType",
-    #         #     annotation=Annotation(
-    #         #         documentation=Documentation(
-    #         #             lang="en",
-    #         #             value="The Video Line is 6144 bytes long. Each Video Line contains a sequence of 2048 pixels, with 4 bands data words each, word 6 bits long.",
-    #         #         ),
-    #         #         app_info=AppInfo(
-    #         #             block=Block(
-    #         #                 encoding=BlockEncoding(value="BINARY"),
-    #         #                 length=BlockLength(value=6144),
-    #         #             )
-    #         #         ),
-    #         #     ),
-    #         # ),
-    #     ]
-    #
-    #     minor_frame_complex_element = [
-    #         Element(
-    #             name="pixel",
-    #             min_occurs="8",
-    #             max_occurs="8",
-    #             annotation=Annotation(
-    #                 documentation=Documentation(
-    #                     lang="en",
-    #                     value="Each pixel contains 4 bands data words. Each MESSR data word is 6 bits.",
-    #                 ),
-    #                 # app_info=ComplexAppInfo(block=Block(
-    #                 #     encoding=BlockEncoding(value="BINARY"),
-    #                 #     length=BlockLength(value=6184),
-    #                 #     occurence=BlockOccurrence(value="unbounded")
-    #                 # ))
-    #             ),
-    #             complex_type=ComplexType(
-    #                 sequence=Sequence(
-    #                     elements=[
-    #                         Element(
-    #                             name="dataWord",
-    #                             type="xs:unsignedByte",
-    #                             min_occurs="4",
-    #                             max_occurs="4",
-    #                             annotation=Annotation(
-    #                                 documentation=Documentation(
-    #                                     lang="en", value="Each data word is 6 bits."
-    #                                 ),
-    #                                 app_info=AppInfo(
-    #                                     block=Block(
-    #                                         encoding=BlockEncoding(value="BINARY"),
-    #                                         length=BlockLength(unit="bit", value=6),
-    #                                         occurence=BlockOccurrence(value="4"),
-    #                                     )
-    #                                 ),
-    #                             ),
-    #                         )
-    #                     ]
-    #                 )
-    #             ),
-    #         )
-    #     ]
-    #     minor_frame_element_1 = [
-    #         Element(
-    #             name="minorFrame",
-    #             type="minorFrameType",
-    #             min_occurs="256",
-    #             max_occurs="256",
-    #             annotation=Annotation(
-    #                 documentation=Documentation(
-    #                     lang="en",
-    #                     value="The Minor Frame is 24 bytes long and represents 8 pixels, with 4 bands data words each. Each MESSR data word is 6 bits.",
-    #                 ),
-    #                 app_info=AppInfo(
-    #                     block=Block(
-    #                         encoding=BlockEncoding(value="BINARY"),
-    #                         length=BlockLength(value=24),
-    #                         occurence=BlockOccurrence(value="256"),
-    #                     )
-    #                 ),
-    #             ),
-    #         )
-    #     ]
-    #     complex_type = [
-    #         ComplexType(
-    #             name="measurementType",
-    #             sequence=Sequence(elements=measurement_complex_element),
-    #         ),
-    #         ComplexType(name="lineType", sequence=Sequence(elements=line_complex_element)),
-    #         ComplexType(name="videoLineType", sequence=Sequence(elements=minor_frame_element_1)),
-    #         ComplexType(
-    #             name="minorFrameType",
-    #             sequence=Sequence(elements=minor_frame_complex_element),
-    #         ),
-    #     ]
-    #
-    #     documentation = Documentation(
-    #         lang="en",
-    #         value='A SAFE product generated with CHRIS PROBA-1 data includes one .zip file, containing the data corresponding to one imaging sequence along with the corresponding header data. ',
-    #     )
-    #     element = Element(
-    #         name="measurement",
-    #         type="measurementType",
-    #         annotation=Annotation(documentation=documentation),
-    #     )
-    #     super().__init__(
-    #         include=Include(schema_location="mos-object-types.xsd"),
-    #         element=element,
-    #         complex_type=complex_type,
-    #         # version=version, sip_creator=sip_creator, sip_creation_time=sip_creation_time,
-    #         **data,
-    #     )
-
 
 if __name__ == "__main__":
+    complex_elements = [
+        Element(
+            name="pixel",
+            type="pixelType",
+            min_occurs="0",
+            max_occurs="unbounded",
+            annotation=Annotation(
+                documentation=Documentation(
+                    lang="en",
+                    value="The file contains binary data in 12-bit pixel values. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned.",
+                ),
+                app_info=AppInfo(
+                    block=Block(
+                        encoding=BlockEncoding(value="BINARY"),
+                        length=BlockLength(value=12),
+                    )
+                ),
+            ),
+        )
+    ]
+
+    complex_type = [
+        ComplexType(
+            name="measurementType",
+            sequence=Sequence(elements=complex_elements),
+        ),
+    ]
+
+    documentation = Documentation(
+        lang="en",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes one .dat file, containing 12-bit pixel values. The data is structured in fixed-length packets, as defined by PACKETSIZE in the headers. Each packet includes a header containing synchronization markers, metadata, and checksums, and a block of image data, where pixels from odd and even channels are interleaved. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned. These values represent the number of bytes per channel per line at 12 bits per pixel. The actual block length is determined by the configuration specified in the .set file the data corresponding to one imaging sequence along with the corresponding header data.",
+    )
+    element = Element(
+        name="measurement",
+        type="measurementType",
+        annotation=Annotation(documentation=documentation),
+    )
+
+
     parent_instance = Schema(
-        # target_namespace="http://www.esa.int/safe/1.2/mos",
-        # xmlns="http://www.esa.int/safe/1.2/mos",
-        # version="2.0", sip_creator="ESA", sip_creation_time=datetime(2021, 2, 3)
+        element=element,
+        complex_type=complex_type,
     )
 
     xml = parent_instance.to_xml(

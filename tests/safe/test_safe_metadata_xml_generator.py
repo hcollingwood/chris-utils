@@ -1,4 +1,4 @@
-from chris_utils.safe.safe_metadata_xml_generator import calculate_md5_checksum
+from chris_utils.safe.manifest_xml_generator import calculate_md5_checksum
 import tempfile
 
 

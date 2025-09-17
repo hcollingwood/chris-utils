@@ -13,6 +13,7 @@ namespaces = {
 class BlockOccurrence(BaseXmlModel, tag="occurrence", ns="sdf"):
     value: str
 
+
 class BlockOffset(BaseXmlModel, tag="offset", ns="sdf"):
     value: int
 
@@ -92,15 +93,16 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
     # timestamp: datetime.datetime
 
     def __init__(self, **data):
-        timestamp = data['timestamp']
+        timestamp = data["timestamp"]
         year = timestamp.strftime("%Y")
         doy = timestamp.strftime("%j")
         hours = timestamp.strftime("%H")
         minutes = timestamp.strftime("%M")
         seconds = timestamp.strftime("%S")
         fraction_of_second = timestamp.strftime("%f")
-        milliseconds, microseconds = [int(fraction_of_second[i:i+3]) for i in range(0, len(fraction_of_second), 3)]
-
+        milliseconds, microseconds = [
+            int(fraction_of_second[i : i + 3]) for i in range(0, len(fraction_of_second), 3)
+        ]
 
         datetime_sequence_elements = [
             Element(
@@ -108,14 +110,15 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=year,
+                        lang="en",
+                        value=year,
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
             ),
             Element(
@@ -123,14 +126,15 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=doy,
+                        lang="en",
+                        value=doy,
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
             ),
             Element(
@@ -138,14 +142,15 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=hours,
+                        lang="en",
+                        value=hours,
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
             ),
             Element(
@@ -153,14 +158,15 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=minutes,
+                        lang="en",
+                        value=minutes,
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
             ),
             Element(
@@ -168,14 +174,15 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=seconds,
+                        lang="en",
+                        value=seconds,
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
             ),
             Element(
@@ -183,14 +190,15 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=str(milliseconds),
+                        lang="en",
+                        value=str(milliseconds),
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
             ),
             Element(
@@ -198,29 +206,32 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 type="xs:unsignedInt",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value=str(microseconds),
+                        lang="en",
+                        value=str(microseconds),
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             length=BlockLength(value=4),
                         )
-                   ),
+                    ),
                 ),
-            ),Element(
+            ),
+            Element(
                 name="satelliteTime",
                 type="xs:double",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value="Swath time in milliseconds and part of them from the beginning of the year.",
+                        lang="en",
+                        value="Swath time in milliseconds and part of them from the beginning of the year.",
                     ),
-                        app_info=AppInfo(
+                    app_info=AppInfo(
                         block=Block(
                             encoding=BlockEncoding(value="BINARY"),
                             offset=BlockOffset(value=4),
                             length=BlockLength(value=8),
                         )
-                   ),
+                    ),
                 ),
             ),
         ]
@@ -334,13 +345,17 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                 name="auxiliaryDataType",
                 annotation=Annotation(
                     documentation=Documentation(
-                        lang="en", value="Auxiliary Data Type.",
+                        lang="en",
+                        value="Auxiliary Data Type.",
                     ),
-                    app_info=AppInfo(block=Block(encoding=BlockEncoding(value="BINARY"),length=BlockLength(value=40)))
+                    app_info=AppInfo(
+                        block=Block(
+                            encoding=BlockEncoding(value="BINARY"), length=BlockLength(value=40)
+                        )
                     ),
+                ),
                 sequence=Sequence(elements=datetime_sequence_elements),
             ),
-
             # ComplexType(name="lineType", sequence=Sequence(elements=line_complex_element)),
             # ComplexType(name="videoLineType", sequence=Sequence(elements=minor_frame_element_1)),
             # ComplexType(
@@ -369,7 +384,9 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
 
 if __name__ == "__main__":
     parent_instance = Schema(
-        timestamp=datetime.datetime(year=2020, month=12, day=11, hour=11, minute=10, second=9, microsecond=8007)
+        timestamp=datetime.datetime(
+            year=2020, month=12, day=11, hour=11, minute=10, second=9, microsecond=8007
+        )
         # version="2.0", sip_creator="ESA", sip_creation_time=datetime(2021, 2, 3)
     )
 

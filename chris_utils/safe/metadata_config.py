@@ -1,5 +1,15 @@
-from chris_utils.safe.dat_xml_generator import Schema as DATSchema, Include, Annotation, Element, Documentation, Sequence, ComplexType, BlockEncoding,AppInfo,BlockLength,Block,BlockOccurrence
-
+from chris_utils.safe.dat_xml_generator import (
+    Annotation,
+    AppInfo,
+    Block,
+    BlockEncoding,
+    BlockLength,
+    ComplexType,
+    Documentation,
+    Element,
+)
+from chris_utils.safe.dat_xml_generator import Schema as DATSchema
+from chris_utils.safe.dat_xml_generator import Sequence
 
 
 def dat_schema():
@@ -12,13 +22,12 @@ def dat_schema():
             annotation=Annotation(
                 documentation=Documentation(
                     lang="en",
-                    value="The file contains binary data in 12-bit pixel values. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned."
+                    value="The file contains binary data in 12-bit pixel values. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned.",
                 ),
                 app_info=AppInfo(
                     block=Block(
                         encoding=BlockEncoding(value="BINARY"),
                         length=BlockLength(value=12),
-                        # occurence=BlockOccurrence(value="unbounded"),
                     )
                 ),
             ),
@@ -42,30 +51,25 @@ def dat_schema():
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
-        # include=Include(schema_location="mos-object-types.xsd"),
         element=element,
         complex_type=complex_type,
     )
 
     return xml
 
+
 def txt_schema():
     complex_elements = [
         Element(
             name="txt",
             type="txtType",
-            # min_occurs="0",
-            # max_occurs="unbounded",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en",
-                    value="The file contains metadata in plain text format."
+                    lang="en", value="The file contains metadata in plain text format."
                 ),
                 app_info=AppInfo(
                     block=Block(
                         encoding=BlockEncoding(value="ASCII"),
-                        # length=BlockLength(value=12),
-                        # occurence=BlockOccurrence(value="unbounded"),
                     )
                 ),
             ),
@@ -89,7 +93,6 @@ def txt_schema():
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
-        # include=Include(schema_location="mos-object-types.xsd"),
         element=element,
         complex_type=complex_type,
     )
@@ -97,24 +100,18 @@ def txt_schema():
     return xml
 
 
-
 def hdr_schema():
     complex_elements = [
         Element(
             name="hdr",
             type="hdrType",
-            # min_occurs="0",
-            # max_occurs="unbounded",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en",
-                    value="The file contains header data in plain text format."
+                    lang="en", value="The file contains header data in plain text format."
                 ),
                 app_info=AppInfo(
                     block=Block(
                         encoding=BlockEncoding(value="ASCII"),
-                        # length=BlockLength(value=12),
-                        # occurence=BlockOccurrence(value="unbounded"),
                     )
                 ),
             ),
@@ -138,7 +135,6 @@ def hdr_schema():
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
-        # include=Include(schema_location="mos-object-types.xsd"),
         element=element,
         complex_type=complex_type,
     )
@@ -151,18 +147,14 @@ def set_schema():
         Element(
             name="set",
             type="setType",
-            # min_occurs="0",
-            # max_occurs="unbounded",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en",
-                    value="The file contains configuration data in binary format."
+                    lang="en", value="The file contains configuration data in binary format."
                 ),
                 app_info=AppInfo(
                     block=Block(
                         encoding=BlockEncoding(value="BINARY"),
                         length=BlockLength(value=12),
-                        # occurence=BlockOccurrence(value="unbounded"),
                     )
                 ),
             ),
@@ -186,7 +178,6 @@ def set_schema():
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
-        # include=Include(schema_location="mos-object-types.xsd"),
         element=element,
         complex_type=complex_type,
     )

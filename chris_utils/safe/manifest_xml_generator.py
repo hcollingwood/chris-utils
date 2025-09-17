@@ -12,7 +12,7 @@ namespaces = {
 
 file_info = {
     "xsd": ("SAFE Restriction to XFDU Schema", None, "xmlBaseSchema"),
-    "measurement": ("Measurement Data", "measurementData", "measurementSchema")
+    "measurement": ("Measurement Data", "measurementData", "measurementSchema"),
 }
 
 
@@ -83,7 +83,6 @@ class ContentUnitOuter(BaseXmlModel, tag="contentUnit", ns="xfdu", nsmap=namespa
 
 class InformationPackageMap(BaseXmlModel, tag="informationPackageMap", ns=""):
     content_unit: ContentUnitOuter
-    # pass
 
 
 def calculate_md5_checksum(file_path: str):
@@ -103,32 +102,27 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
         version = "esa/safe/2.0"
         schema_location = "urn:ccsds:schema:xfdu:1 xfdu.xsd"
         file_id = "CHRIS"
-        file_name = "CHRISSchema"
         rep_id = f"{file_id}BaseSchema"
-        # file_text_info = "FILE A DFDL Schema"
-        # file_path = f"measurement/{file_name}.xsd"
-        # data_object_mime_type = "application/octet-stream"
-        # checksum_value = "63d1daca226ba957472c567a7fc33421"
 
         data_object_pointer = DataObjectPointer(data_object_id=file_id)
 
         data_object_list = []
         if data_objects:
             for data_object in data_objects:
-                split_path = data_object.rsplit('/', 2)
-                logging.info('/'.join(split_path[1:]))
+                split_path = data_object.rsplit("/", 2)
+                logging.info("/".join(split_path[1:]))
                 data_type = split_path[-2]
                 file_name = split_path[-1]
-                file_extension = file_name.split('.')[-1]
+                file_extension = file_name.split(".")[-1]
 
                 try:
                     text_info, data_object_id, rep_id = file_info[file_extension]
                 except KeyError:
                     text_info, data_object_id, rep_id = file_info["measurement"]
+                    data_object_id = f"{data_object_id}{file_extension.title()}"
 
                 if data_object_id is None:
                     data_object_id = f"{file_extension}Schema"
-
 
                 checksum = Checksum(checksum_name="MD5", value=calculate_md5_checksum(data_object))
                 file_location = FileLocation(
@@ -180,16 +174,6 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
             metadata_reference=metadata_reference,
         )
 
-        # file_location = FileLocation(
-        #     locator_type="URL", text_info=file_text_info, href=file_path
-        # )
-        # checksum = Checksum(checksum_name="MD5", value=checksum_value)
-        # byte_stream = ByteStream(
-        #     file_location=file_location,
-        #     mime_type=data_object_mime_type,
-        #     checksum=checksum,
-        # )
-
         information_package_map = InformationPackageMap(content_unit=content_unit_outer)
         metadata_section = MetadataSection(metadata_objects=[metadata_object])
 
@@ -206,7 +190,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
 
 
 if __name__ == "__main__":
-    parent_instance = XFDU(file_name = "myfile.zip")
+    parent_instance = XFDU(file_name="myfile.zip")
 
     xml = parent_instance.to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
