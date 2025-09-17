@@ -66,7 +66,7 @@ certifi==2025.8.3
     #   pyproj
     #   rasterio
     #   requests
-cffi==1.17.1
+cffi==2.0.0
     # via
     #   cryptography
     #   eccodes
@@ -103,9 +103,9 @@ colorlog==6.9.0
     # via sentineltoolbox
 configparser==7.0.0
     # via eopf
-cql2==0.3.7
+cql2==0.4.0
     # via sentineltoolbox
-cryptography==45.0.7
+cryptography==46.0.1
     # via eopf
 dacite==1.9.2
     # via sentineltoolbox
@@ -248,7 +248,7 @@ numcodecs==0.15.1
     #   eopf
     #   kerchunk
     #   zarr
-numpy==2.3.2
+numpy==2.3.3
     # via
     #   cfgrib
     #   cftime
@@ -324,9 +324,9 @@ psutil==7.0.0
     # via distributed
 pyarrow==21.0.0
     # via dask-expr
-pycparser==2.22
+pycparser==2.23
     # via cffi
-pydantic==2.11.7
+pydantic==2.11.9
     # via
     #   eopf
     #   fastapi
@@ -341,7 +341,7 @@ pydantic-xml==2.17.3
     # via chris-utils (pyproject.toml)
 pyogrio==0.11.1
     # via geopandas
-pyparsing==3.2.3
+pyparsing==3.2.4
     # via snuggs
 pyproj==3.7.2
     # via
@@ -401,9 +401,9 @@ s3fs==2024.5.0
     #   fsspec
 s3transfer==0.10.4
     # via boto3
-scikit-learn==1.7.1
+scikit-learn==1.7.2
     # via sentineltoolbox
-scipy==1.16.1
+scipy==1.16.2
     # via
     #   dask-image
     #   scikit-learn
@@ -435,7 +435,7 @@ tblib==3.1.0
     # via distributed
 threadpoolctl==3.6.0
     # via scikit-learn
-tifffile==2025.8.28
+tifffile==2025.9.9
     # via
     #   dask-image
     #   pims
