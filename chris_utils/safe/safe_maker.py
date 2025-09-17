@@ -3,14 +3,17 @@ import binascii
 import datetime
 import logging
 import os
+import re
 import shutil
 import tempfile
 
+from chris_utils.eo_sip import process_zarr, process_cog
 from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
 from chris_utils.safe.mos_file_generator import Schema as MosSchema
 from chris_utils.safe.safe_metadata_xml_generator import XFDU
 # from chris_utils.safe.dat_xml_generator import Schema as DATSchema, Include, Annotation, Element, Documentation, Sequence, ComplexType, BlockEncoding,AppInfo,BlockLength,Block,BlockOccurrence
 from chris_utils.safe.metadata_config import dat_schema, txt_schema, hdr_schema, set_schema
+from chris_utils.utils import get_version
 
 valid_package_types = [
     "RPI-BAS",
@@ -84,9 +87,29 @@ def copy_mos_file(output_file_path) -> None:
     shutil.copy(f"chris_utils/safe/{mos_file_name}", f"{output_file_path}/{mos_file_name}")
 
 
+
+
+def generate_file_name(metadata_file, suffix, output_dir):
+    if metadata_file.endswith('.zarr'):
+        _, metadata, _, _ = process_zarr(metadata_file)
+    elif metadata_file.endswith('.cog'):
+        _, metadata, _, _ = process_cog(metadata_file)
+    else:
+        raise Exception("File type not recognised")
+
+    timestamp = metadata['chris_image_date_yyyy_mm_dd_'] + "T" + metadata['chris_calculated_image_centre_time']
+
+    root = f"CHRIS_{re.sub('[^0-9a-zA-Z]+', '', timestamp)}"
+
+    version = get_version(root, suffix, output_dir)
+
+    return f"{root}_{version}{suffix}"
+
+
 def make_safe(
     inputs: str,
     timestamp: datetime.datetime,
+    metadata: str,
     output: str = ".",
     package_type: str = None,
     mode: str = "1",
@@ -123,10 +146,11 @@ def make_safe(
 
         # metadata = make_metadata(timestamp)
 
-        if os.path.isabs(file):
-            output_root = f"{output}/{file.split('/')[-1]}"
-        else:
-            output_root = f"{output}/{file}"
+        # if os.path.isabs(file):
+        #     output_root = f"{output}/{file.split('/')[-1]}"
+        # else:
+        #     output_root = f"{output}/{file}"
+
 
         with tempfile.TemporaryDirectory() as temp_dir:
 
@@ -202,7 +226,13 @@ def make_safe(
 
             manifest = make_manifest(all_paths)
             checksum = calculate_crc_checksum(manifest)
-            output_file_path = f"{output_root}{package_type_tag}_{checksum}.SAFE"
+            output_file_ending = f"{package_type_tag}_{checksum}.SAFE"
+
+            output_file_name = generate_file_name(metadata, output_file_ending, output)
+
+            output_file_path = f"{output}/{output_file_name}"
+
+            # output_file_path = f"_{output_file_ending}"
 
             if not os.path.exists(output_file_path):
                 os.makedirs(output_file_path)
