@@ -189,7 +189,7 @@ def process_cog(path):
 
     file_data = []
     file_root = "/".join(path.rsplit("/")[:-1])
-    for root_path, dirs, files in os.walk(path):
+    for root_path, _, files in os.walk(path):
         for file in files:
             file_path = os.path.join(root_path, file)
             if os.path.isfile(file_path):
