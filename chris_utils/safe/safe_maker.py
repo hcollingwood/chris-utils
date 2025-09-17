@@ -192,11 +192,12 @@ def make_safe(
                 os.makedirs(output_file_path)
 
             write_manifest(manifest, output_file_path)
-            shutil.copytree(temp_dir, output_file_path, dirs_exist_ok=True)
 
             for d in dir_list:
                 if len(os.listdir(d)) == 0:
                     shutil.rmtree(d)
+
+            shutil.copytree(temp_dir, output_file_path, dirs_exist_ok=True)
 
 
 if __name__ == "__main__":
