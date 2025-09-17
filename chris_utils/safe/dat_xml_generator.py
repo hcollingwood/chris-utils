@@ -82,7 +82,10 @@ if __name__ == "__main__":
             annotation=Annotation(
                 documentation=Documentation(
                     lang="en",
-                    value="The file contains binary data in 12-bit pixel values. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned.",
+                    value="The file contains binary data in 12-bit pixel values. The raw "
+                          "block length for image data varies depending on the band "
+                          "configuration—specifically whether it's full or half width, "
+                          "and whether it's binned or unbinned.",
                 ),
                 app_info=AppInfo(
                     block=Block(
@@ -103,7 +106,17 @@ if __name__ == "__main__":
 
     documentation = Documentation(
         lang="en",
-        value="A SAFE product generated with CHRIS PROBA-1 data includes one .dat file, containing 12-bit pixel values. The data is structured in fixed-length packets, as defined by PACKETSIZE in the headers. Each packet includes a header containing synchronization markers, metadata, and checksums, and a block of image data, where pixels from odd and even channels are interleaved. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned. These values represent the number of bytes per channel per line at 12 bits per pixel. The actual block length is determined by the configuration specified in the .set file the data corresponding to one imaging sequence along with the corresponding header data.",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes one .dat file, "
+              "containing 12-bit pixel values. The data is structured in fixed-length packets, "
+              "as defined by PACKETSIZE in the headers. Each packet includes a header containing "
+              "synchronization markers, metadata, and checksums, and a block of image data, "
+              "where pixels from odd and even channels are interleaved. The raw block length "
+              "for image data varies depending on the band configuration—specifically whether "
+              "it's full or half width, and whether it's binned or unbinned. These values "
+              "represent the number of bytes per channel per line at 12 bits per pixel. The "
+              "actual block length is determined by the configuration specified in the .set file "
+              "the data corresponding to one imaging sequence along with the corresponding header "
+              "data.",
     )
     element = Element(
         name="measurement",
