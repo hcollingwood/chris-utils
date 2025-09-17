@@ -12,7 +12,7 @@ namespaces = {
 
 file_info = {
     "xsd": ("SAFE Restriction to XFDU Schema", None, "xmlBaseSchema"),
-    "measurement": ("Measurement Data", "CHRISBaseSchema", "measurementSchema"),
+    "measurement": ("Measurement Data", "measurementData", "CHRISBaseSchema"),
 }
 
 
