@@ -22,7 +22,12 @@ def dat_schema():
             annotation=Annotation(
                 documentation=Documentation(
                     lang="en",
-                    value="The file contains binary data in 12-bit pixel values. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned.",
+                    value="The file contains binary data in 12-bit pixel "
+                          "values. The raw block length for image data "
+                          "varies depending on the band "
+                          "configuration—specifically whether it's full "
+                          "or half width, and whether it's binned or "
+                          "unbinned.",
                 ),
                 app_info=AppInfo(
                     block=Block(
@@ -43,7 +48,20 @@ def dat_schema():
 
     documentation = Documentation(
         lang="en",
-        value="A SAFE product generated with CHRIS PROBA-1 data includes one .dat file, containing 12-bit pixel values. The data is structured in fixed-length packets, as defined by PACKETSIZE in the headers. Each packet includes a header containing synchronization markers, metadata, and checksums, and a block of image data, where pixels from odd and even channels are interleaved. The raw block length for image data varies depending on the band configuration—specifically whether it's full or half width, and whether it's binned or unbinned. These values represent the number of bytes per channel per line at 12 bits per pixel. The actual block length is determined by the configuration specified in the .set file the data corresponding to one imaging sequence along with the corresponding header data.",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes "
+              "one .dat file, containing 12-bit pixel values. The data is "
+              "structured in fixed-length packets, as defined by "
+              "PACKETSIZE in the headers. Each packet includes a header "
+              "containing synchronization markers, metadata, and checksums, "
+              "and a block of image data, where pixels from odd and even "
+              "channels are interleaved. The raw block length for image "
+              "data varies depending on the band configuration—specifically "
+              "whether it's full or half width, and whether it's binned or "
+              "unbinned. These values represent the number of bytes per "
+              "channel per line at 12 bits per pixel. The actual block "
+              "length is determined by the configuration specified in "
+              "the .set file the data corresponding to one imaging "
+              "sequence along with the corresponding header data.",
     )
     element = Element(
         name="measurement",
@@ -65,7 +83,8 @@ def txt_schema():
             type="txtType",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en", value="The file contains metadata in plain text format."
+                    lang="en", value="The file contains metadata in plain "
+                                     "text format."
                 ),
                 app_info=AppInfo(
                     block=Block(
@@ -85,7 +104,11 @@ def txt_schema():
 
     documentation = Documentation(
         lang="en",
-        value="A SAFE product generated with CHRIS PROBA-1 data includes one .txt file, containing image attribute data. File is to be read vertically with attributes denoted by lines starting with '//' and the corresponding value on the line below.",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes "
+              "one .txt file, containing image attribute data. File is to "
+              "be read vertically with attributes denoted by lines "
+              "starting with '//' and the corresponding value on the line "
+              "below.",
     )
     element = Element(
         name="measurement",
@@ -107,7 +130,8 @@ def hdr_schema():
             type="hdrType",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en", value="The file contains header data in plain text format."
+                    lang="en", value="The file contains header data in "
+                                     "plain text format."
                 ),
                 app_info=AppInfo(
                     block=Block(
@@ -127,7 +151,10 @@ def hdr_schema():
 
     documentation = Documentation(
         lang="en",
-        value="A SAFE product generated with CHRIS PROBA-1 data includes one .hdr file, containing image header data. Attributes and the corresponding values are defined per line, separated by an equals sign e.g. attribute = value.",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes "
+              "one .hdr file, containing image header data. Attributes and "
+              "the corresponding values are defined per line, separated by "
+              "an equals sign e.g. attribute = value.",
     )
     element = Element(
         name="measurement",
@@ -149,7 +176,8 @@ def set_schema():
             type="setType",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en", value="The file contains configuration data in binary format."
+                    lang="en", value="The file contains configuration "
+                                     "data in binary format."
                 ),
                 app_info=AppInfo(
                     block=Block(
@@ -170,7 +198,9 @@ def set_schema():
 
     documentation = Documentation(
         lang="en",
-        value="A SAFE product generated with CHRIS PROBA-1 data includes one .set file, containing image configuration data. This defines values including integers, flags and dimensions.",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes "
+              "one .set file, containing image configuration data. This "
+              "defines values including integers, flags and dimensions.",
     )
     element = Element(
         name="measurement",

@@ -225,13 +225,14 @@ class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
                         value="Auxiliary Data Type.",
                     ),
                     app_info=AppInfo(
-                        block=Block(encoding=BlockEncoding(value="BINARY"), length=BlockLength(value=40))
+                        block=Block(
+                            encoding=BlockEncoding(value="BINARY"), length=BlockLength(value=40)
+                        )
                     ),
                 ),
                 sequence=Sequence(elements=datetime_sequence_elements),
             ),
         ]
-
 
         super().__init__(
             complex_type=complex_type,

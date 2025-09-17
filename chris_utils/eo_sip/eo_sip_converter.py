@@ -314,10 +314,10 @@ def process_zarr(path):
     return contents, metadata, thumbnail_rgb, file_data
 
 
-def process_safe(path):
+def process_safe(folder_path):
     file_data = []
-    file_root = "/".join(path.rsplit("/")[:-1])
-    for path, dirs, files in os.walk(path):
+    file_root = "/".join(folder_path.rsplit("/")[:-1])
+    for path, _, files in os.walk(folder_path):
         for file in files:
             file_path = f"{path}/{file}"
             if os.path.isfile(file_path):
@@ -460,7 +460,7 @@ def get_file_size(path):
         total_size = os.path.getsize(path)
     else:
         total_size = 0
-        for root_path, dirs, files in os.walk(path):
+        for root_path, _, files in os.walk(path):
             for file in files:
                 file_path = os.path.join(root_path, file)
                 if not os.path.islink(file_path):

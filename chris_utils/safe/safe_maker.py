@@ -46,9 +46,9 @@ def make_manifest(paths: list = None) -> str:
 
     manifest = XFDU(data_objects=paths)
 
-    return manifest.to_xml(pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True).decode(
-        "utf-8"
-    )
+    return manifest.to_xml(
+        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
+    ).decode("utf-8")
 
 
 def make_xsd(file_type: str) -> str:
@@ -56,9 +56,9 @@ def make_xsd(file_type: str) -> str:
 
     metadata = MosSchema(file_type=file_type)
 
-    return metadata.to_xml(pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True).decode(
-        "utf-8"
-    )
+    return metadata.to_xml(
+        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
+    ).decode("utf-8")
 
 
 def write_index(metadata: str, path: str) -> None:
@@ -92,7 +92,9 @@ def generate_file_name(metadata_file, suffix, output_dir):
         raise Exception("File type not recognised")
 
     timestamp = (
-        metadata["chris_image_date_yyyy_mm_dd_"] + "T" + metadata["chris_calculated_image_centre_time"]
+        metadata["chris_image_date_yyyy_mm_dd_"]
+        + "T"
+        + metadata["chris_calculated_image_centre_time"]
     )
 
     root = f"CHRIS_{re.sub('[^0-9a-zA-Z]+', '', timestamp)}"

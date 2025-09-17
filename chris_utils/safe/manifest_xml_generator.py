@@ -162,7 +162,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
 
         metadata_reference = MetadataReference(
             locator_type="OTHER",
-            href=f"urn:x-safe:BASE:root",
+            href="urn:x-safe:BASE:root",
             vocabulary_name="SAFE",
             mime_type="text/xml",
         )
