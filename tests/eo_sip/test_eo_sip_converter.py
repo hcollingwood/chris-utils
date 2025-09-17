@@ -60,7 +60,7 @@ def mock_metadata():
                 "start_datetime": "2004-04-11T18:18:16Z",
             }
         },
-        "all_wavelength": [
+        "wavelength": [
             0.0,
             442.5,
             491.1,
