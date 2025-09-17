@@ -6,26 +6,78 @@
 #
 affine==2.4.0
     # via rasterio
+aiobotocore==2.13.3
+    # via
+    #   eopf
+    #   s3fs
+aiohappyeyeballs==2.6.1
+    # via aiohttp
+aiohttp==3.12.15
+    # via
+    #   aiobotocore
+    #   eopf
+    #   s3fs
+aioitertools==0.12.0
+    # via aiobotocore
+aiokafka==0.12.0
+    # via eopf
+aiosignal==1.4.0
+    # via aiohttp
 annotated-types==0.7.0
     # via pydantic
+anyio==4.10.0
+    # via
+    #   httpx
+    #   starlette
+    #   watchfiles
+asciitree==0.3.3
+    # via zarr
+async-timeout==5.0.1
+    # via aiokafka
 attrs==25.3.0
     # via
-    #   cattrs
+    #   aiohttp
+    #   cfgrib
+    #   eccodes
+    #   jsonschema
+    #   morecantile
     #   rasterio
-    #   requests-cache
-beautifulsoup4==4.13.5
-    # via pydap
+    #   referencing
+beautifulsoup4==4.12.3
+    # via
+    #   bs4
+    #   eopf
 black==25.1.0
     # via chris-utils (pyproject.toml)
+boto3==1.34.106
+    # via eopf
+botocore==1.34.162
+    # via
+    #   aiobotocore
+    #   boto3
+    #   s3transfer
+bs4==0.0.2
+    # via sentineltoolbox
 build==1.3.0
     # via pip-tools
-cattrs==25.2.0
-    # via requests-cache
 certifi==2025.8.3
     # via
+    #   eopf
+    #   httpcore
+    #   httpx
     #   netcdf4
+    #   pyogrio
+    #   pyproj
     #   rasterio
     #   requests
+cffi==1.17.1
+    # via
+    #   cryptography
+    #   eccodes
+cfgrib==0.9.10.4
+    # via
+    #   eopf
+    #   sentineltoolbox
 cfgv==3.4.0
     # via pre-commit
 cftime==1.6.4.post1
@@ -34,95 +86,270 @@ cftime==1.6.4.post1
     #   xarray
 charset-normalizer==3.4.3
     # via requests
-click==8.2.1
+click==8.1.7
     # via
     #   black
+    #   cfgrib
     #   click-plugins
     #   cligj
+    #   dask
+    #   distributed
+    #   eopf
     #   pip-tools
     #   rasterio
+    #   rio-cogeo
+    #   uvicorn
 click-plugins==1.1.1.2
     # via rasterio
 cligj==0.7.2
     # via rasterio
+cloudpickle==3.1.1
+    # via
+    #   dask
+    #   distributed
+colorlog==6.9.0
+    # via sentineltoolbox
+configparser==7.0.0
+    # via eopf
 coverage==7.10.6
     # via chris-utils (pyproject.toml)
-crc32c==2.7.1
+cql2==0.3.7
+    # via sentineltoolbox
+cryptography==45.0.7
+    # via eopf
+dacite==1.9.2
+    # via sentineltoolbox
+dask[array,dataframe,distributed]==2024.5.2
+    # via
+    #   chris-utils (pyproject.toml)
+    #   dask-expr
+    #   dask-image
+    #   distributed
+    #   eopf
+    #   sentineltoolbox
+dask-expr==1.1.2
+    # via dask
+dask-image==2024.5.2
+    # via eopf
+deepdiff==8.0.1
+    # via
+    #   eopf
+    #   sentineltoolbox
+defusedxml==0.7.1
+    # via sentineltoolbox
+deprecated==1.2.18
     # via numcodecs
 distlib==0.4.0
     # via virtualenv
-donfig==0.8.1.post1
+distributed==2024.5.2
+    # via
+    #   dask
+    #   eopf
+    #   sentineltoolbox
+eccodes==1.7.1
+    # via
+    #   cfgrib
+    #   eopf
+    #   sentineltoolbox
+ecmwflibs==0.6.3
+    # via
+    #   eopf
+    #   sentineltoolbox
+eopf==2.5.9
+    # via chris-utils (pyproject.toml)
+fastapi==0.115.5
+    # via eopf
+fasteners==0.20
     # via zarr
 fastjsonschema==2.21.2
     # via validate-pyproject
 filelock==3.19.1
     # via virtualenv
-fsspec==2025.9.0
-    # via xarray
+findlibs==0.1.2
+    # via
+    #   eccodes
+    #   ecmwflibs
+frozenlist==1.7.0
+    # via
+    #   aiohttp
+    #   aiosignal
+fsspec[s3]==2024.5.0
+    # via
+    #   dask
+    #   eopf
+    #   kerchunk
+    #   s3fs
+    #   sentineltoolbox
+    #   xarray
+future==1.0.0
+    # via eopf
+geopandas==1.1.1
+    # via
+    #   eopf
+    #   sentineltoolbox
+h11==0.16.0
+    # via
+    #   httpcore
+    #   uvicorn
 h5netcdf==1.6.4
-    # via xarray
-h5py==3.14.0
-    # via h5netcdf
-identify==2.6.14
+    # via
+    #   sentineltoolbox
+    #   xarray
+h5py==3.13.0
+    # via
+    #   eopf
+    #   h5netcdf
+httpcore==1.0.9
+    # via httpx
+httptools==0.6.4
+    # via uvicorn
+httpx==0.28.1
+    # via starlette
+identify==2.6.13
     # via pre-commit
 idna==3.10
     # via
+    #   anyio
+    #   httpx
     #   requests
-    #   url-normalize
+    #   yarl
+imageio==2.37.0
+    # via pims
+importlib-metadata==6.8.0
+    # via
+    #   dask
+    #   eopf
 iniconfig==2.1.0
     # via pytest
 isort==6.0.1
     # via chris-utils (pyproject.toml)
-lxml==6.0.1
+itsdangerous==2.2.0
+    # via starlette
+jinja2==3.1.6
+    # via
+    #   distributed
+    #   eopf
+    #   starlette
+jmespath==1.0.1
+    # via
+    #   boto3
+    #   botocore
+joblib==1.5.2
+    # via scikit-learn
+jsonschema==4.23.0
+    # via eopf
+jsonschema-specifications==2025.9.1
+    # via jsonschema
+kerchunk==0.2.7
+    # via eopf
+locket==1.0.0
+    # via
+    #   distributed
+    #   partd
+lxml==4.9.4
     # via
     #   chris-utils (pyproject.toml)
-    #   pydap
+    #   eopf
+markupsafe==3.0.2
+    # via jinja2
+morecantile==6.2.0
+    # via rio-cogeo
+msgpack==1.1.1
+    # via distributed
+multidict==6.6.4
+    # via
+    #   aiohttp
+    #   yarl
 mypy-extensions==1.1.0
     # via black
 netcdf4==1.7.2
-    # via xarray
+    # via
+    #   eopf
+    #   sentineltoolbox
+    #   xarray
 nodeenv==1.9.1
     # via pre-commit
-numcodecs[crc32c]==0.16.2
-    # via zarr
-numpy==2.3.3
+numcodecs==0.15.1
     # via
+    #   eopf
+    #   kerchunk
+    #   zarr
+numpy==2.3.2
+    # via
+    #   cfgrib
     #   cftime
     #   chris-utils (pyproject.toml)
+    #   dask
+    #   dask-image
+    #   eccodes
+    #   eopf
+    #   geopandas
     #   h5py
+    #   imageio
+    #   kerchunk
     #   netcdf4
     #   numcodecs
     #   pandas
-    #   pydap
+    #   pims
+    #   pyogrio
     #   rasterio
+    #   rioxarray
+    #   scikit-learn
     #   scipy
+    #   sentineltoolbox
+    #   shapely
+    #   snuggs
+    #   tifffile
     #   xarray
     #   zarr
+orderly-set==5.2.2
+    # via deepdiff
+overrides==7.7.0
+    # via
+    #   eopf
+    #   sentineltoolbox
 packaging==25.0
     # via
+    #   aiokafka
     #   black
     #   build
+    #   dask
+    #   distributed
+    #   geopandas
     #   h5netcdf
+    #   pims
     #   pooch
+    #   pyogrio
     #   pytest
+    #   rioxarray
+    #   sentineltoolbox
     #   validate-pyproject
     #   xarray
-    #   zarr
 pandas==2.3.2
     # via
     #   chris-utils (pyproject.toml)
+    #   dask
+    #   dask-expr
+    #   dask-image
+    #   geopandas
+    #   sentineltoolbox
     #   xarray
+partd==1.4.2
+    # via dask
 pathspec==0.12.1
     # via black
 pillow==11.3.0
-    # via chris-utils (pyproject.toml)
+    # via
+    #   chris-utils (pyproject.toml)
+    #   imageio
+pims==0.7
+    # via dask-image
 pip-tools==7.5.0
     # via chris-utils (pyproject.toml)
 platformdirs==4.4.0
     # via
     #   black
     #   pooch
-    #   requests-cache
     #   virtualenv
 pluggy==1.6.0
     # via pytest
@@ -130,90 +357,219 @@ pooch==1.8.2
     # via xarray
 pre-commit==4.3.0
     # via chris-utils (pyproject.toml)
-pydantic==2.11.9
-    # via pydantic-xml
+propcache==0.3.2
+    # via
+    #   aiohttp
+    #   yarl
+psutil==7.0.0
+    # via distributed
+pyarrow==21.0.0
+    # via dask-expr
+pycparser==2.22
+    # via cffi
+pydantic==2.11.7
+    # via
+    #   eopf
+    #   fastapi
+    #   morecantile
+    #   pydantic-xml
+    #   rio-cogeo
 pydantic-core==2.33.2
     # via
     #   pydantic
     #   pydantic-xml
 pydantic-xml==2.17.3
     # via chris-utils (pyproject.toml)
-pydap==3.5.6
-    # via xarray
 pygments==2.19.2
     # via pytest
-pyparsing==3.2.4
-    # via rasterio
+pyogrio==0.11.1
+    # via geopandas
+pyparsing==3.2.3
+    # via snuggs
+pyproj==3.7.2
+    # via
+    #   geopandas
+    #   morecantile
+    #   rioxarray
 pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==8.4.2
+pytest==8.4.1
     # via
     #   chris-utils (pyproject.toml)
     #   pytest-mock
-pytest-mock==3.15.1
+pytest-mock==3.14.1
     # via chris-utils (pyproject.toml)
 python-dateutil==2.9.0.post0
-    # via pandas
-pytz==2025.2
-    # via pandas
+    # via
+    #   botocore
+    #   pandas
+python-dotenv==1.1.1
+    # via uvicorn
+python-multipart==0.0.20
+    # via
+    #   eopf
+    #   starlette
+pytz==2024.1
+    # via
+    #   eopf
+    #   pandas
 pyyaml==6.0.2
     # via
-    #   donfig
+    #   dask
+    #   distributed
     #   pre-commit
-rasterio==1.4.3
-    # via chris-utils (pyproject.toml)
-requests==2.32.5
+    #   starlette
+    #   uvicorn
+rasterio==1.3.10
     # via
+    #   chris-utils (pyproject.toml)
+    #   eopf
+    #   rio-cogeo
+    #   rioxarray
+    #   sentineltoolbox
+referencing==0.36.2
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+requests==2.32.2
+    # via
+    #   eopf
     #   pooch
-    #   pydap
-    #   requests-cache
-requests-cache==1.2.1
-    # via pydap
-ruff==0.13.0
-    # via chris-utils (pyproject.toml)
-scipy==1.16.2
+rio-cogeo==5.4.1
     # via
-    #   pydap
+    #   chris-utils (pyproject.toml)
+    #   eopf
+rioxarray==0.15.5
+    # via
+    #   eopf
+    #   sentineltoolbox
+rpds-py==0.27.1
+    # via
+    #   jsonschema
+    #   referencing
+ruff==0.12.11
+    # via chris-utils (pyproject.toml)
+s3fs==2024.5.0
+    # via
+    #   eopf
+    #   fsspec
+s3transfer==0.10.4
+    # via boto3
+scikit-learn==1.7.1
+    # via sentineltoolbox
+scipy==1.16.1
+    # via
+    #   dask-image
+    #   scikit-learn
+    #   sentineltoolbox
     #   xarray
+sentineltoolbox==0.5.4
+    # via eopf
+shapely==2.0.7
+    # via
+    #   eopf
+    #   geopandas
 six==1.17.0
     # via python-dateutil
+slicerator==1.1.0
+    # via pims
+sniffio==1.3.1
+    # via anyio
+snuggs==1.4.7
+    # via rasterio
+sortedcontainers==2.4.0
+    # via distributed
 soupsieve==2.8
     # via beautifulsoup4
-trove-classifiers==2025.9.11.17
+starlette[full]==0.40.0
+    # via
+    #   eopf
+    #   fastapi
+tblib==3.1.0
+    # via distributed
+threadpoolctl==3.6.0
+    # via scikit-learn
+tifffile==2025.8.28
+    # via
+    #   dask-image
+    #   pims
+toml==0.10.2
+    # via
+    #   eopf
+    #   sentineltoolbox
+tomli==2.2.1
+    # via sentineltoolbox
+toolz==1.0.0
+    # via
+    #   dask
+    #   distributed
+    #   partd
+tornado==6.5.2
+    # via
+    #   distributed
+    #   eopf
+trove-classifiers==2025.8.26.11
     # via validate-pyproject
 typing-extensions==4.15.0
     # via
-    #   beautifulsoup4
-    #   cattrs
-    #   numcodecs
+    #   aiokafka
+    #   aiosignal
+    #   anyio
+    #   fastapi
     #   pydantic
     #   pydantic-core
+    #   referencing
     #   typing-inspection
-    #   zarr
 typing-inspection==0.4.1
     # via pydantic
 tzdata==2025.2
     # via pandas
-url-normalize==2.2.1
-    # via requests-cache
+ujson==5.11.0
+    # via kerchunk
 urllib3==2.5.0
     # via
+    #   botocore
+    #   distributed
     #   requests
-    #   requests-cache
+uvicorn[standard]==0.34.0
+    # via eopf
+uvloop==0.21.0
+    # via uvicorn
 validate-pyproject[all]==0.24.1
     # via chris-utils (pyproject.toml)
 virtualenv==20.34.0
     # via pre-commit
-webob==1.8.9
-    # via pydap
+watchfiles==1.1.0
+    # via uvicorn
+websockets==15.0.1
+    # via uvicorn
 wheel==0.45.1
     # via pip-tools
-xarray[io]==2025.9.0
-    # via chris-utils (pyproject.toml)
-zarr==3.1.2
-    # via xarray
+wrapt==1.17.3
+    # via
+    #   aiobotocore
+    #   deprecated
+xarray[io]==2024.11.0
+    # via
+    #   chris-utils (pyproject.toml)
+    #   eopf
+    #   rioxarray
+    #   sentineltoolbox
+yarl==1.20.1
+    # via aiohttp
+zarr==2.18.4
+    # via
+    #   chris-utils (pyproject.toml)
+    #   eopf
+    #   kerchunk
+    #   sentineltoolbox
+    #   xarray
+zict==3.0.0
+    # via distributed
+zipp==3.23.0
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
