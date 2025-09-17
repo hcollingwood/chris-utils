@@ -10,6 +10,11 @@ namespaces = {
     "": "",
 }
 
+file_info = {
+    "xsd": ("SAFE Restriction to XFDU Schema", None, "xmlBaseSchema"),
+    "measurement": ("Measurement Data", "measurementData", "measurementSchema")
+}
+
 
 class Checksum(BaseXmlModel, tag="checksum"):
     checksum_name: str = attr(name="checksumName")
@@ -110,12 +115,26 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
         data_object_list = []
         if data_objects:
             for data_object in data_objects:
-                logging.info(data_object)
+                split_path = data_object.rsplit('/', 2)
+                logging.info('/'.join(split_path[1:]))
+                data_type = split_path[-2]
+                file_name = split_path[-1]
+                file_extension = file_name.split('.')[-1]
+
+                try:
+                    text_info, data_object_id, rep_id = file_info[file_extension]
+                except KeyError:
+                    text_info, data_object_id, rep_id = file_info["measurement"]
+
+                if data_object_id is None:
+                    data_object_id = f"{file_extension}Schema"
+
+
                 checksum = Checksum(checksum_name="MD5", value=calculate_md5_checksum(data_object))
                 file_location = FileLocation(
                     locator_type="URL",
-                    text_info="Measurement Data",
-                    href=f"measurement/{data_object}",#.split("/")[-1],
+                    text_info=text_info,
+                    href=f"{data_type}/{file_name}",
                 )
                 byte_stream = ByteStream(
                     mime_type="application/octet-stream",
@@ -124,8 +143,8 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
                 )
                 data_object_list.append(
                     DataObject(
-                        data_object_id="measurementData",
-                        rep_id="measurementSchema",
+                        data_object_id=data_object_id,
+                        rep_id=rep_id,
                         byte_stream=byte_stream,
                     )
                 )
@@ -149,7 +168,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
 
         metadata_reference = MetadataReference(
             locator_type="OTHER",
-            href=f"urn:x-safe:BASE:root:{file_name}",
+            href=f"urn:x-safe:BASE:root",
             vocabulary_name="SAFE",
             mime_type="text/xml",
         )

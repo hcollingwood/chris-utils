@@ -5,11 +5,12 @@ import logging
 import os
 import shutil
 import tempfile
-import zipfile
 
 from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
 from chris_utils.safe.mos_file_generator import Schema as MosSchema
 from chris_utils.safe.safe_metadata_xml_generator import XFDU
+# from chris_utils.safe.dat_xml_generator import Schema as DATSchema, Include, Annotation, Element, Documentation, Sequence, ComplexType, BlockEncoding,AppInfo,BlockLength,Block,BlockOccurrence
+from chris_utils.safe.metadata_config import dat_schema, txt_schema, hdr_schema, set_schema
 
 valid_package_types = [
     "RPI-BAS",
@@ -19,6 +20,14 @@ valid_package_types = [
     "DAT-PRD",
     "DAT-AUX",
 ]
+
+xml_schemas  = {
+    'dat': dat_schema(),
+    'txt': txt_schema(),
+    'hdr': hdr_schema(),
+    'set': set_schema(),
+}
+
 
 
 def calculate_crc_checksum(data: str) -> str:
@@ -42,6 +51,16 @@ def make_metadata(timestamp: datetime.datetime) -> str:
     """Generates metadata"""
 
     metadata = MosSchema(timestamp=timestamp)
+
+    return metadata.to_xml(
+        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
+    ).decode("utf-8")
+
+
+def make_xsd(file_type: str) -> str:
+    """Generates metadata"""
+
+    metadata = MosSchema(file_type=file_type)
 
     return metadata.to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
@@ -80,7 +99,10 @@ def make_safe(
     if not os.path.exists(output):
         os.makedirs(output)
 
-    zip_name = 'ZIP.zip'
+    # zip_name = 'ZIP.zip'
+
+    file_types = set()
+    all_paths = []
 
     processing_message = "Processing %s"
     packaging_message = "Packaging %s"
@@ -99,65 +121,98 @@ def make_safe(
                 raise Exception(f"Package type {package_type} not in {valid_package_types}")
             package_type_tag = f"_{package_type}"
 
-        manifest = make_manifest([zip_name])
         metadata = make_metadata(timestamp)
-
-        checksum = calculate_crc_checksum(manifest)
 
         if os.path.isabs(file):
             output_root = f"{output}/{file.split('/')[-1]}"
         else:
             output_root = f"{output}/{file}"
 
-        output_file_path = f"{output_root}{package_type_tag}_{checksum}.SAFE"
+        with tempfile.TemporaryDirectory() as temp_dir:
 
-        logging.info(packaging_message, output_file_path)
 
-        if not os.path.exists(output_file_path):
-            os.makedirs(output_file_path)
+            logging.info(packaging_message, temp_dir)
 
-        measurement_dir = f"{output_file_path}/measurement"
-        metadata_dir = f"{output_file_path}/metadata"
-        documentation_dir = f"{output_file_path}/documentation"  # these are optional
-        index_dir = f"{output_file_path}/index"  # these are optional
-        dir_list = [measurement_dir, metadata_dir, documentation_dir, index_dir]
-        for d in dir_list:
-            if not os.path.exists(d):
-                os.makedirs(d)
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
 
-        with tempfile.TemporaryDirectory() as tmp:
-            zip_path = f"{tmp}/{zip_name}"
-            with zipfile.ZipFile(zip_path, 'w') as zip:
+            measurement_dir = f"{temp_dir}/measurement"
+            metadata_dir = f"{temp_dir}/metadata"
+            documentation_dir = f"{temp_dir}/documentation"  # these are optional
+            index_dir = f"{temp_dir}/index"  # these are optional
+            dir_list = [measurement_dir, metadata_dir, documentation_dir, index_dir]
+            for d in dir_list:
+                if not os.path.exists(d):
+                    os.makedirs(d)
 
-                for path in paths:
-                    zip.write(path)
-                    # file_name = path.split("/")[-1]
+            # with tempfile.TemporaryDirectory() as tmp:
+                # zip_path = f"{tmp}/{zip_name}"
+                # with zipfile.ZipFile(zip_path, 'w') as zip:
 
-                shutil.copy(zip_path, f"{measurement_dir}/MEASUREMENT-{zip_name}")
-        measurement_xml = (
-            Schema(
-                target_namespace="http://www.esa.int/safe/1.2/mos",
-                xmlns="http://www.esa.int/safe/1.2/mos",
-            )
-            .to_xml(
-                pretty_print=True,
-                encoding="UTF-8",
-                standalone=True,
-                exclude_unset=True,
-            )
-            .decode("utf-8")
-        )
+                    # for path in paths:
+                    #     zip.write(path)
+                        # file_name = path.split("/")[-1]
+            for path in paths:
+                file_type = path.split('.')[-1]
+                output_dat_path = f"{measurement_dir}/MEASUREMENT-{file_type}.dat"
+                shutil.copy(path, output_dat_path)
+                file_types.add(file_type)
+                all_paths.append(output_dat_path)
 
-        with open(f"{metadata_dir}/zip.xsd", "w") as f:
-            f.write(measurement_xml)
+            for file_type in file_types:
+                try:
+                    xml = xml_schemas[file_type].to_xml(
+                        pretty_print=True,
+                        encoding="UTF-8",
+                        standalone=True,
+                        exclude_unset=True,
+                    ).decode("utf-8")
 
-        # copy_mos_file(output_file_path, metadata)
-        write_index(metadata, index_dir)
-        write_manifest(manifest, output_file_path)
+                    output_xsd_path = f"{metadata_dir}/{file_type}.xsd"
+                    with open(output_xsd_path, "w") as f:
+                        f.write(xml)
+                        all_paths.append(output_xsd_path)
 
-        for d in dir_list:
-            if len(os.listdir(d)) == 0:
-                shutil.rmtree(d)
+
+                except KeyError:
+                    logging.error(f"Schema for {file_type} not found")
+
+            # measurement_xml = (
+            #     Schema(
+            #         target_namespace="http://www.esa.int/safe/1.2/mos",
+            #         xmlns="http://www.esa.int/safe/1.2/mos",
+            #     )
+            #     .to_xml(
+            #         pretty_print=True,
+            #         encoding="UTF-8",
+            #         standalone=True,
+            #         exclude_unset=True,
+            #     )
+            #     .decode("utf-8")
+            # )
+
+            # with open(f"{metadata_dir}/zip.xsd", "w") as f:
+            # f.write(measurement_xml)
+
+            # copy_mos_file(output_file_path, metadata)
+
+            all_paths.sort()
+
+            write_index(metadata, index_dir)
+
+            manifest = make_manifest(all_paths)
+            checksum = calculate_crc_checksum(manifest)
+            output_file_path = f"{output_root}{package_type_tag}_{checksum}.SAFE"
+
+            if not os.path.exists(output_file_path):
+                os.makedirs(output_file_path)
+
+            write_manifest(manifest, output_file_path)
+            shutil.copytree(temp_dir, output_file_path, dirs_exist_ok=True)
+
+            for d in dir_list:
+                if len(os.listdir(d)) == 0:
+                    shutil.rmtree(d)
 
 
 if __name__ == "__main__":
