@@ -6,7 +6,8 @@ import re
 import shutil
 import tempfile
 
-from chris_utils.eo_sip import process_cog, process_zarr
+import pandas as pd
+
 from chris_utils.safe.metadata_config import (
     dat_schema,
     hdr_schema,
@@ -74,28 +75,21 @@ def write_manifest(metadata: str, path: str) -> None:
 
 
 def generate_file_name(metadata_file, suffix, output_dir):
-    if metadata_file.endswith(".zarr"):
-        _, metadata, _, _ = process_zarr(metadata_file)
-    elif metadata_file.endswith(".cog"):
-        _, metadata, _, _ = process_cog(metadata_file)
-    elif type(metadata_file) is dict:
-        metadata = metadata_file
-        if not (
-            "chris_image_date_yyyy_mm_dd_" in metadata.keys()
-            and "chris_calculated_image_centre_time" in metadata.keys()
-        ):
-            raise Exception(
-                "Required metadata not available. Needs chris_image_date_yyyy_mm_dd_ and "
-                "chris_calculated_image_centre_time"
-            )
-    else:
-        raise Exception("File type not recognised")
+    date_key = "ImageDate(yyyymmdd)"
+    time_key = "CalculatedImageCentreTime"
 
-    timestamp = (
-        metadata["chris_image_date_yyyy_mm_dd_"]
-        + "T"
-        + metadata["chris_calculated_image_centre_time"]
-    )
+    if type(metadata_file) is dict:
+        metadata = metadata_file
+
+        if not (date_key in metadata.keys() and time_key in metadata.keys()):
+            raise Exception("fRequired metadata not available. Needs {date_key} "
+                            "and {time_key}")
+
+    else:
+        raise Exception("Metadata not recognised")
+
+
+    timestamp = metadata[date_key] + "T" + metadata[time_key]
 
     root = f"CHRIS_{re.sub('[^0-9a-zA-Z]+', '', timestamp)}"
 
@@ -104,9 +98,51 @@ def generate_file_name(metadata_file, suffix, output_dir):
     return f"{root}_{version}{suffix}"
 
 
+class HeaderData:
+    def __init__(self, path):
+        self.path = path
+        self.read_data(path)
+
+    def read_data(self, path):
+        with open(path, "r") as f:
+            lines = f.readlines()
+
+        for i in range(len(lines)):
+            if lines[i].startswith("//"):
+                var = lines[i].replace(" ", "").replace("-", "")[2:].strip("\n")
+
+                values = []
+                for j in range(i + 1, len(lines)):
+                    next_line = lines[j]
+                    if next_line.startswith("//"):
+                        break
+
+                    if not "\t" in next_line:
+                        values.append(next_line.strip("\n"))
+                    else:
+                        values.append(next_line.strip("\n").split("\t"))
+
+                if len(values) == 1:
+                    values = values[0]
+
+                if any(isinstance(el, list) for el in values):  # checks for list of lists
+                    number_of_columns = len(values[0])
+                    columns = lines[i].strip("//").strip("\n").split("\t")
+                    if not len(columns) == number_of_columns:
+                        columns = lines[i].strip("//").strip("\n").split()
+
+                    values = pd.DataFrame(values, columns=columns)
+
+                    for k in reversed(range(0, i)):
+                        var = lines[k].replace(" ", "").replace("-", "")[2:].strip("\n")
+                        if var:
+                            break
+
+                setattr(self, var, values)
+
+
 def make_safe(
     inputs: str,
-    metadata: str,
     output: str = ".",
     package_type: str = None,
 ):
@@ -151,12 +187,19 @@ def make_safe(
                 if not os.path.exists(d):
                     os.makedirs(d)
 
+            metadata = {}
             for path in paths:
                 file_type = path.split(".")[-1]
                 output_dat_path = f"{measurement_dir}/MEASUREMENT-{file_type}.dat"
                 shutil.copy(path, output_dat_path)
                 file_types.add(file_type)
                 all_paths.append(output_dat_path)
+
+                try:
+                    metadata = metadata | HeaderData(path).__dict__
+
+                except UnicodeDecodeError:
+                    pass
 
             for file_type in file_types:
                 try:
