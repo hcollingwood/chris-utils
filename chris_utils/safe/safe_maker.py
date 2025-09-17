@@ -47,14 +47,14 @@ def make_manifest(paths: list=None) -> str:
     ).decode("utf-8")
 
 
-def make_metadata(timestamp: datetime.datetime) -> str:
-    """Generates metadata"""
-
-    metadata = MosSchema(timestamp=timestamp)
-
-    return metadata.to_xml(
-        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
-    ).decode("utf-8")
+# def make_metadata(timestamp: datetime.datetime) -> str:
+#     """Generates metadata"""
+#
+#     metadata = MosSchema(timestamp=timestamp)
+#
+#     return metadata.to_xml(
+#         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
+#     ).decode("utf-8")
 
 
 def make_xsd(file_type: str) -> str:
@@ -121,7 +121,7 @@ def make_safe(
                 raise Exception(f"Package type {package_type} not in {valid_package_types}")
             package_type_tag = f"_{package_type}"
 
-        metadata = make_metadata(timestamp)
+        # metadata = make_metadata(timestamp)
 
         if os.path.isabs(file):
             output_root = f"{output}/{file.split('/')[-1]}"
@@ -198,7 +198,7 @@ def make_safe(
 
             all_paths.sort()
 
-            write_index(metadata, index_dir)
+            # write_index(metadata, index_dir)
 
             manifest = make_manifest(all_paths)
             checksum = calculate_crc_checksum(manifest)
