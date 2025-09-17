@@ -1,5 +1,5 @@
-from chris_utils.eo_sip.eo_sip_converter import check_metadata, format_latitude, format_longitude
 import pytest
+from chris_utils.eo_sip.eo_sip_converter import check_metadata, format_latitude, format_longitude
 
 
 @pytest.fixture()

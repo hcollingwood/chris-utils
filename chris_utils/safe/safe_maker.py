@@ -46,9 +46,9 @@ def make_manifest(paths: list = None) -> str:
 
     manifest = XFDU(data_objects=paths)
 
-    return manifest.to_xml(
-        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
-    ).decode("utf-8")
+    return manifest.to_xml(pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True).decode(
+        "utf-8"
+    )
 
 
 def make_xsd(file_type: str) -> str:
@@ -56,9 +56,9 @@ def make_xsd(file_type: str) -> str:
 
     metadata = MosSchema(file_type=file_type)
 
-    return metadata.to_xml(
-        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
-    ).decode("utf-8")
+    return metadata.to_xml(pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True).decode(
+        "utf-8"
+    )
 
 
 def write_index(metadata: str, path: str) -> None:
@@ -78,22 +78,21 @@ def generate_file_name(metadata_file, suffix, output_dir):
         _, metadata, _, _ = process_zarr(metadata_file)
     elif metadata_file.endswith(".cog"):
         _, metadata, _, _ = process_cog(metadata_file)
-    elif type(metadata_file) == dict:
+    elif type(metadata_file) is dict:
         metadata = metadata_file
         if not (
             "chris_image_date_yyyy_mm_dd_" in metadata.keys()
             and "chris_calculated_image_centre_time" in metadata.keys()
         ):
             raise Exception(
-                "Required metadata not available. Needs chris_image_date_yyyy_mm_dd_ and chris_calculated_image_centre_time"
+                "Required metadata not available. Needs chris_image_date_yyyy_mm_dd_ and "
+                "chris_calculated_image_centre_time"
             )
     else:
         raise Exception("File type not recognised")
 
     timestamp = (
-        metadata["chris_image_date_yyyy_mm_dd_"]
-        + "T"
-        + metadata["chris_calculated_image_centre_time"]
+        metadata["chris_image_date_yyyy_mm_dd_"] + "T" + metadata["chris_calculated_image_centre_time"]
     )
 
     root = f"CHRIS_{re.sub('[^0-9a-zA-Z]+', '', timestamp)}"
@@ -124,7 +123,7 @@ def make_safe(
         logging.info(processing_message, file)
 
         paths = []
-        for root, dirs, files in os.walk(file):
+        for root, _, files in os.walk(file):
             for f in files:
                 paths.append(os.path.join(root, f))
 

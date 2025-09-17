@@ -111,7 +111,6 @@ if __name__ == "__main__":
         annotation=Annotation(documentation=documentation),
     )
 
-
     parent_instance = Schema(
         element=element,
         complex_type=complex_type,
