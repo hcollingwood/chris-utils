@@ -53,8 +53,8 @@ def acos_deg(angle):
 
 def check_metadata(metadata: dict):
     regex_checks = {
-        "chris_lattitude": r"[-]?\d+.\d+",
-        "chris_longitude": r"[-]?\d+.\d+",
+        "chris_lattitude": r"[-]?\d+\.\d+",
+        "chris_longitude": r"[-]?\d+\.\d+",
         "chris_chris_mode": r"([1-5]|hrc)",
         "chris_image_date_yyyy_mm_dd_": r"[A-z0-9-\s]+",
         "chris_calculated_image_centre_time": r"[A-z0-9-:\s]+",
