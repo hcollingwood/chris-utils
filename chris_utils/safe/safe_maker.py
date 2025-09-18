@@ -189,7 +189,7 @@ def make_safe(
 
             metadata = {}
             for path in paths:
-                file_type = path.split(".")[-1]
+                file_type = os.path.splitext(path)[1][1:].lower()
                 output_dat_path = f"{measurement_dir}/MEASUREMENT-{file_type}.dat"
                 shutil.copy(path, output_dat_path)
                 file_types.add(file_type)
