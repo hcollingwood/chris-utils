@@ -34,7 +34,7 @@ def get_version(root, suffix, output_folder="."):
     while True:
         padded_number = f"{version:0>4}"
 
-        file = f"{output_folder}/{root}_{padded_number}{suffix}"
+        file = os.path.join(output_folder, f"{root}_{padded_number}{suffix}")
         if os.path.exists(file):
             version += 1
         else:
