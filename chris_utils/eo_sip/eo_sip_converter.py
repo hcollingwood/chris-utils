@@ -315,6 +315,7 @@ def process_zarr(path):
 
 
 def prepare_image(image_data):
+    """Takes normalised image data (values between 0 and 1) and converts it to an image"""
     image = (image_data * 255).astype(np.uint8)
     return Image.fromarray(image, mode="RGB")
 
