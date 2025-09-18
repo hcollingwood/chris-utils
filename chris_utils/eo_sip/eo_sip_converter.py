@@ -319,7 +319,7 @@ def prepare_image(image_data):
     return Image.fromarray(image, mode="RGB")
 
 
-def make_cog_thumbnail(image_data, metadata) -> str:
+def make_cog_thumbnail(image_data, metadata) -> bytes:
 
     tif_info = TiffImagePlugin.ImageFileDirectory_v2()
     tif_info[270] = str(metadata)
