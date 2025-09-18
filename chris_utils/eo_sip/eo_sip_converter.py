@@ -304,7 +304,7 @@ def process_zarr(path):
 
     file_data = []
     file_root = "/".join(path.rsplit("/")[:-1])
-    for root_path, dirs, files in os.walk(path):
+    for root_path, _, files in os.walk(path):
         for file in files:
             file_path = os.path.join(root_path, file)
             if os.path.isfile(file_path):
@@ -537,7 +537,8 @@ def calculate_angles(metadata):
         sin_deg(latitude) * sin_deg(declination_deg)
         + cos_deg(latitude) * cos_deg(declination_deg) * cos_deg(solar_hour_angle)
     )
-    # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
+    # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - \
+    #              cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
     azimuth_deg = 180 - acos_deg(
         -(sin_deg(latitude) * cos_deg(zenith_deg) - sin_deg(declination_deg))
         / (cos_deg(latitude) * sin_deg(zenith_deg))
@@ -589,7 +590,8 @@ def convert_eo_sip(
         raw_metadata["formatted_longitude"] = format_longitude(raw_metadata["chris_longitude"])
 
         timestamp = datetime.strptime(
-            f"{raw_metadata['chris_image_date_yyyy_mm_dd_']} {raw_metadata['chris_calculated_image_centre_time']}",
+            f"{raw_metadata['chris_image_date_yyyy_mm_dd_']} "
+            f"{raw_metadata['chris_calculated_image_centre_time']}",
             "%Y-%m-%d %H:%M:%S",
         )
         raw_metadata["timestamp"] = timestamp

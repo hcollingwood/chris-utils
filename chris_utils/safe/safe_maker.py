@@ -117,7 +117,7 @@ class HeaderData:
                     if next_line.startswith("//"):
                         break
 
-                    if not "\t" in next_line:
+                    if "\t" not in next_line:
                         values.append(next_line.strip("\n"))
                     else:
                         values.append(next_line.strip("\n").split("\t"))
@@ -127,9 +127,9 @@ class HeaderData:
 
                 if any(isinstance(el, list) for el in values):  # checks for list of lists
                     number_of_columns = len(values[0])
-                    columns = lines[i].strip("//").strip("\n").split("\t")
+                    columns = lines[i].removeprefix("//").removesuffix("\n").split("\t")
                     if not len(columns) == number_of_columns:
-                        columns = lines[i].strip("//").strip("\n").split()
+                        columns = lines[i].removeprefix("//").removesuffix("\n").split()
 
                     values = pd.DataFrame(values, columns=columns)
 
