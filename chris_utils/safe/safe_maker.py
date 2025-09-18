@@ -8,8 +8,8 @@ import tempfile
 
 import pandas as pd
 
-from chris_utils.safe.measurement_metadata_generator import Schema
 from chris_utils.safe.manifest_xml_generator import XFDU
+from chris_utils.safe.measurement_metadata_generator import Schema
 from chris_utils.safe.metadata_config import (
     dat_schema,
     hdr_schema,
