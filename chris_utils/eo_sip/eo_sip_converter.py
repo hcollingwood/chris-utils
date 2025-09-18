@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import rasterio
 import xarray as xr
-from PIL import Image
+from PIL import Image, TiffImagePlugin
 
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
@@ -314,6 +314,25 @@ def process_zarr(path):
     return contents, metadata, thumbnail_rgb, file_data
 
 
+def prepare_image(image_data):
+    """Takes normalised image data (values between 0 and 1) and converts it to an image"""
+    image = (image_data * 255).astype(np.uint8)
+    return Image.fromarray(image, mode="RGB")
+
+
+def make_cog_thumbnail(image_data, metadata) -> bytes:
+
+    tif_info = TiffImagePlugin.ImageFileDirectory_v2()
+    tif_info[270] = str(metadata)
+
+    im = prepare_image(image_data)
+
+    img_byte_arr = io.BytesIO()
+    im.save(img_byte_arr, format="TIFF", tiffinfo=tif_info)
+
+    return img_byte_arr.getvalue()
+
+
 def process_safe(folder_path):
     file_data = []
     file_root = "/".join(folder_path.rsplit("/")[:-1])
@@ -396,10 +415,10 @@ def make_image(data, file_name):
     im.save(file_name)
 
 
-def get_image(image):
-    image = (image * 255).astype(np.uint8)
+def make_png_thumbnail(image_data):
+    im = prepare_image(image_data)
+
     img_byte_arr = io.BytesIO()
-    im = Image.fromarray(image, mode="RGB")
     im.save(img_byte_arr, format="PNG")
     return img_byte_arr.getvalue()
 
@@ -586,16 +605,19 @@ def convert_eo_sip(
 
         xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)
         xml_info = generate_info(file_name)
-        image_data = get_image(image)
+        png_thumbnail = make_png_thumbnail(image)
+        cog_thumbnail = make_cog_thumbnail(image, raw_metadata)
 
-        image_file_name = f"{file_name}.BI.PNG"
+        png_file_name = f"{file_name}.BI.PNG"
+        cog_file_name = f"{file_name}.BI.TIF"
         metadata_file_name = f"{file_name}.MD.XML"
         information_file_name = f"{file_name}.SI.XML"
         zip_file_name = f"{output}/{file_name}.ZIP"
 
         logging.info(f"Writing to {zip_file_name}")
         with zipfile.ZipFile(zip_file_name, "w", zipfile.ZIP_DEFLATED) as zip:
-            zip.writestr(image_file_name, image_data)
+            zip.writestr(png_file_name, png_thumbnail)
+            zip.writestr(cog_file_name, cog_thumbnail)
             zip.writestr(metadata_file_name, xml_metadata)
             zip.writestr(information_file_name, xml_info)
             for name, data in file_data:
