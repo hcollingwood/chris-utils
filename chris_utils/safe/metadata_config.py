@@ -41,7 +41,7 @@ def dat_schema():
 
     complex_type = [
         ComplexType(
-            name="measurementType",
+            name="pixelType",
             sequence=Sequence(elements=complex_elements),
         ),
     ]
@@ -64,8 +64,8 @@ def dat_schema():
               "sequence along with the corresponding header data.",
     )
     element = Element(
-        name="measurement",
-        type="measurementType",
+        name="pixel",
+        type="pixelType",
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
@@ -97,7 +97,7 @@ def txt_schema():
 
     complex_type = [
         ComplexType(
-            name="measurementType",
+            name="txtType",
             sequence=Sequence(elements=complex_elements),
         ),
     ]
@@ -111,8 +111,8 @@ def txt_schema():
               "below.",
     )
     element = Element(
-        name="measurement",
-        type="measurementType",
+        name="txt",
+        type="txtType",
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
@@ -144,7 +144,7 @@ def hdr_schema():
 
     complex_type = [
         ComplexType(
-            name="measurementType",
+            name="hdrType",
             sequence=Sequence(elements=complex_elements),
         ),
     ]
@@ -157,8 +157,8 @@ def hdr_schema():
               "an equals sign e.g. attribute = value.",
     )
     element = Element(
-        name="measurement",
-        type="measurementType",
+        name="hdr",
+        type="hdrType",
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
@@ -191,7 +191,7 @@ def set_schema():
 
     complex_type = [
         ComplexType(
-            name="measurementType",
+            name="setType",
             sequence=Sequence(elements=complex_elements),
         ),
     ]
@@ -203,8 +203,8 @@ def set_schema():
               "defines values including integers, flags and dimensions.",
     )
     element = Element(
-        name="measurement",
-        type="measurementType",
+        name="set",
+        type="setType",
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(

@@ -66,10 +66,10 @@ class Include(BaseXmlModel, tag="include", ns="xs"):
 
 class Schema(BaseXmlModel, nsmap=namespaces, ns="xs", tag="schema"):
     xmlns: str = attr(default="http://www.esa.int/safe/1.2/mos")
+    include: Optional[Include] = element(default=None)
     target_namespace: str = attr(name="targetNamespace", default="http://www.esa.int/safe/1.2/mos")
     element: Element
     complex_type: list[ComplexType]
-    include: Optional[Include] = element(default=None)
 
 
 if __name__ == "__main__":
