@@ -82,8 +82,8 @@ def generate_file_name(metadata_file, suffix, output_dir):
         metadata = metadata_file
 
         if not (date_key in metadata.keys() and time_key in metadata.keys()):
-            raise Exception("fRequired metadata not available. Needs {date_key} "
-                            "and {time_key}")
+            raise Exception(f"Required metadata not available. Needs {date_key} "
+                            f"and {time_key}")
 
     else:
         raise Exception("Metadata not recognised")
