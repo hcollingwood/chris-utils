@@ -60,7 +60,7 @@ def mock_metadata():
                 "start_datetime": "2004-04-11T18:18:16Z",
             }
         },
-        "all_wavelength": [
+        "wavelength": [
             0.0,
             442.5,
             491.1,
@@ -145,7 +145,7 @@ def test_check_metadata__datetime_pass(field, value, mock_metadata):
 @pytest.mark.parametrize(
     "field,value",
     [
-        pytest.param("all_wavelength", [1, "b", 3, "d", 5]),
+        pytest.param("wavelength", [1, "b", 3, "d", 5]),
     ],
 )
 def test_check_metadata__list_fail(field, value, mock_metadata):
@@ -161,7 +161,7 @@ def test_check_metadata__list_fail(field, value, mock_metadata):
 @pytest.mark.parametrize(
     "field,value",
     [
-        pytest.param("all_wavelength", [1, 2, 3, 4, 5]),
+        pytest.param("wavelength", [1, 2, 3, 4, 5]),
     ],
 )
 def test_check_metadata__list_pass(field, value, mock_metadata):

@@ -60,7 +60,7 @@ def check_metadata(metadata: dict):
         "chris_calculated_image_centre_time": r"[A-z0-9-:\s]+",
     }
     list_checks = {
-        "all_wavelength": float,
+        "wavelength": float,
     }
 
     numeric_string_checks = {"chris_lattitude": [-90, 90], "chris_longitude": [-180, 180]}
@@ -165,7 +165,7 @@ def process_cog(path):
         metadata = json.load(f)
     check_metadata(metadata)
 
-    r_band, g_band, b_band = get_band_indexes(metadata["all_wavelength"])
+    r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
     longest_group, _, files = max(os.walk(path))
     files = sorted([file for file in files if file.endswith(".tif")])
@@ -270,7 +270,7 @@ def process_zarr(path):
     metadata = contents.attrs
     check_metadata(metadata)
 
-    r_band, g_band, b_band = get_band_indexes(metadata["all_wavelength"])
+    r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
     longest_group = max(contents.groups)
 
