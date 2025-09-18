@@ -53,11 +53,12 @@ class RCIReader:
         expected = self.width * self.height * self.bands * dt.itemsize
         if size != expected:
             # try alternate data types
-            for alt_code, alt_str in ENVI_DTYPE_MAP.items():
+            for _, alt_str in ENVI_DTYPE_MAP.items():
                 alt_dt = np.dtype(alt_str).newbyteorder(endian)
                 if size == self.width * self.height * self.bands * alt_dt.itemsize:
                     print(
-                        f"Warning: file size {size} bytes matches dtype {alt_str}, not {base}. Using {alt_str}."
+                        f"Warning: file size {size} bytes matches dtype {alt_str}, not {base}. "
+                        f"Using {alt_str}."
                     )
                     self.dtype = alt_dt
                     break
