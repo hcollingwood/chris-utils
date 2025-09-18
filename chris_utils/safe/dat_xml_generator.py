@@ -25,7 +25,7 @@ class BlockEncoding(BaseXmlModel, tag="encoding", ns="sdf"):
 class Block(BaseXmlModel, nsmap=namespaces, tag="block", ns="sdf"):
     encoding: BlockEncoding
     occurence: Optional[BlockOccurrence] = element(default=None)
-    length: Optional[BlockLength] = element
+    length: Optional[BlockLength] = element(default=None)
 
 
 class AppInfo(BaseXmlModel, tag="appinfo", ns="xs"):
