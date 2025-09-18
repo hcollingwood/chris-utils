@@ -143,9 +143,9 @@ def check_metadata(metadata: dict):
 #         # import sys;sys.exit()
 #
 #         # view = views[-1]
-#         # thumbnail_r = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
-#         # thumbnail_g = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
-#         # thumbnail_b = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
+#         # thumbnail_r = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))   # noqa: E501
+#         # thumbnail_g = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))   # noqa: E501
+#         # thumbnail_b = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))   # noqa: E501
 #
 #         thumbnail_r = dataset.read(r_band)
 #         thumbnail_g = dataset.read(g_band)
@@ -471,7 +471,9 @@ def format_longitude(raw: str) -> str:
 def generate_file_name(metadata) -> str:
     """Generates a file name from the provided metadata"""
 
-    return f'{metadata["sat_id"]}_{metadata["file_class"]}_{metadata["product_type"]}_{metadata["formatted_timestamp"]}_{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}'
+    return (f'{metadata["sat_id"]}_{metadata["file_class"]}_'
+            f'{metadata["product_type"]}_{metadata["formatted_timestamp"]}_'
+            f'{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}')
 
 
 def get_file_size(path):

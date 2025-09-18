@@ -8,14 +8,14 @@ import tempfile
 
 import pandas as pd
 
+from chris_utils.safe.measurement_metadata_generator import Schema
+from chris_utils.safe.manifest_xml_generator import XFDU
 from chris_utils.safe.metadata_config import (
     dat_schema,
     hdr_schema,
     set_schema,
     txt_schema,
 )
-from chris_utils.safe.measurement_metadata_generator import Schema as MosSchema
-from chris_utils.safe.manifest_xml_generator import XFDU
 from chris_utils.utils import get_version
 
 valid_package_types = [
@@ -55,7 +55,7 @@ def make_manifest(paths: list = None) -> str:
 def make_xsd(file_type: str) -> str:
     """Generates metadata"""
 
-    metadata = MosSchema(file_type=file_type)
+    metadata = Schema(file_type=file_type)
 
     return metadata.to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
@@ -82,12 +82,10 @@ def generate_file_name(metadata_file, suffix, output_dir):
         metadata = metadata_file
 
         if not (date_key in metadata.keys() and time_key in metadata.keys()):
-            raise Exception(f"Required metadata not available. Needs {date_key} "
-                            f"and {time_key}")
+            raise Exception(f"Required metadata not available. Needs {date_key} " f"and {time_key}")
 
     else:
         raise Exception("Metadata not recognised")
-
 
     timestamp = metadata[date_key] + "T" + metadata[time_key]
 

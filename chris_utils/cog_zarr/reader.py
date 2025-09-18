@@ -99,9 +99,9 @@ class RCIReader:
         all_wavelengths = self.header.get("wavelength")
 
         if (
-                isinstance(all_wavelengths, (list, tuple))
-                and len(all_wavelengths) == self.bands
-                and float(all_wavelengths[0]) == 0.0
+            isinstance(all_wavelengths, (list, tuple))
+            and len(all_wavelengths) == self.bands
+            and float(all_wavelengths[0]) == 0.0
         ):
             # Drop first plane and its 0.0 wavelength so arrays align
             arr = arr[1:, :, :]
