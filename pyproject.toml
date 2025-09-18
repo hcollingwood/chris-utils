@@ -63,6 +63,7 @@ dev = [
     "pip-tools",
     "pytest",
     "pytest-mock",
+    "pyfakefs",
     "black",
     "ruff",
     "coverage",

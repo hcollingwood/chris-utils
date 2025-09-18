@@ -62,10 +62,10 @@ def make_xsd(file_type: str) -> str:
     ).decode("utf-8")
 
 
-def write_index(metadata: str, path: str) -> None:
-    """Writes metadata to mos-object-types.xml in a given directory"""
-    with open(f"{path}/mos-object-types.xml", "w") as f:
-        f.write(metadata)
+# def write_index(metadata: str, path: str) -> None:
+#     """Writes metadata to mos-object-types.xml in a given directory"""
+#     with open(f"{path}/mos-object-types.xml", "w") as f:
+#         f.write(metadata)
 
 
 def write_manifest(metadata: str, path: str) -> None:
