@@ -249,12 +249,10 @@ if __name__ == "__main__":
     parser.add_argument("--mode", help="mode", default="1")
     parser.add_argument("--output", help="output folder", default=".")
     parser.add_argument("--package_type", help="type of package", default=None)
-    parser.add_argument("--metadata", help="metadata", default=None)
     args, unknown = parser.parse_known_args()
 
     make_safe(
         inputs=args.inputs,
         output=args.output,
         package_type=args.package_type,
-        metadata=args.metadata,
     )
