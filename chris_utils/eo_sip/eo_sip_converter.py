@@ -471,9 +471,11 @@ def format_longitude(raw: str) -> str:
 def generate_file_name(metadata) -> str:
     """Generates a file name from the provided metadata"""
 
-    return (f'{metadata["sat_id"]}_{metadata["file_class"]}_'
-            f'{metadata["product_type"]}_{metadata["formatted_timestamp"]}_'
-            f'{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}')
+    return (
+        f'{metadata["sat_id"]}_{metadata["file_class"]}_'
+        f'{metadata["product_type"]}_{metadata["formatted_timestamp"]}_'
+        f'{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}'
+    )
 
 
 def get_file_size(path):
