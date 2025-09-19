@@ -243,7 +243,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
     result: Result
     meta_data_property: MetaDataProperty
 
-    def __init__(self, id: str, **data):
+    def __init__(self, file_id: str, **data):
         metadata = data["data"]
         begin_position = BeginPosition(position=metadata["timestamp"])
         end_position = EndPosition(position=datetime(year=1970, month=1, day=1))
@@ -265,7 +265,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         # this is the aoi box - leave for now:
         pos_list = "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"
         pos = "0.0045000384979* 113.206"  # leave for now
-        eo_sip_file_name = f"{id}.SIP.ZIP"
+        eo_sip_file_name = f"{file_id}.SIP.ZIP"
         uom_bytes = "bytes"
         file_size = metadata["file_size"]
         acquisition_type = "NOMINAL"
@@ -287,16 +287,16 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
 
         phenomenon_time = PhenomenonTime(
             time_period=TimePeriod(
-                id=f"{id}_2", begin_position=begin_position, end_position=end_position
+                id=f"{file_id}_2", begin_position=begin_position, end_position=end_position
             ),
         )
         result_time = ResultTime(
-            time_instant=TimeInstant(id=f"{id}_3", time_position=time_position)
+            time_instant=TimeInstant(id=f"{file_id}_3", time_position=time_position)
         )
 
         procedure = Procedure(
             earth_observation_equipment=EarthObservationEquipment(
-                id=f"{id}_4",
+                id=f"{file_id}_4",
                 platform=PlatformTop(
                     platform=PlatformBottom(
                         short_name=sensor_short_name,
@@ -338,13 +338,13 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         observed_property = ObservedProperty(nil_reason="inapplicable", nil="true")
         feature_of_interest = FeatureOfInterest(
             footprint=Footprint(
-                id=f"{id}_5",
+                id=f"{file_id}_5",
                 multi_extent_of=MultiExtentOf(
                     multi_surface=MultiSurface(
-                        id=f"{id}_6",
+                        id=f"{file_id}_6",
                         surface_member=SurfaceMember(
                             polygon=Polygon(
-                                id=f"{id}_7",
+                                id=f"{file_id}_7",
                                 exterior=Exterior(
                                     linear_ring=LinearRing(pos_list=PosList(value=pos_list))
                                 ),
@@ -352,12 +352,12 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
                         ),
                     )
                 ),
-                center_of=CenterOf(point=Point(id=f"{id}_8", pos=Pos(value=pos))),
+                center_of=CenterOf(point=Point(id=f"{file_id}_8", pos=Pos(value=pos))),
             )
         )
         result = Result(
             earth_observation_result=EarthObservationResult(
-                id=f"{id}_9",
+                id=f"{file_id}_9",
                 product=Product(
                     product_information=ProductInformation(
                         file_name=FileName(
@@ -372,7 +372,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         )
         meta_data_property = MetaDataProperty(
             earth_observation_meta_data=EarthObservationMetaData(
-                identifier=id,
+                identifier=file_id,
                 acquisition_type=acquisition_type,
                 product_type=product_type,
                 status=status,
@@ -380,7 +380,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
             )
         )
         super().__init__(
-            id=id,
+            id=file_id,
             phenomenon_time=phenomenon_time,
             result_time=result_time,
             procedure=procedure,
@@ -395,7 +395,7 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
 if __name__ == "__main__":
 
     file_id = "PR1_OPER_CHR_MO3_1P_20100328T011431_N01-800_W078-260_0001"
-    parent_instance = EarthObservation(id=file_id)
+    parent_instance = EarthObservation(file_id=file_id)
 
     xml = parent_instance.to_xml(pretty_print=False, encoding="UTF-8", standalone=True).decode(
         "utf-8"

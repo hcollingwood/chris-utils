@@ -9,7 +9,6 @@ import tempfile
 import pandas as pd
 
 from chris_utils.safe.manifest_xml_generator import XFDU
-from chris_utils.safe.measurement_metadata_generator import Schema
 from chris_utils.safe.metadata_config import (
     dat_schema,
     hdr_schema,
@@ -29,9 +28,9 @@ valid_package_types = [
 
 xml_schemas = {
     "dat": dat_schema(),
-    "txt": txt_schema(),
     "hdr": hdr_schema(),
     "set": set_schema(),
+    "txt": txt_schema(),
 }
 
 
@@ -52,20 +51,20 @@ def make_manifest(paths: list = None) -> str:
     ).decode("utf-8")
 
 
-def make_xsd(file_type: str) -> str:
-    """Generates metadata"""
+# def make_xsd(file_type: str) -> str:
+#     """Generates metadata"""
+#
+#     metadata = Schema(file_type=file_type)
+#
+#     return metadata.to_xml(
+#         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
+#     ).decode("utf-8")
 
-    metadata = Schema(file_type=file_type)
 
-    return metadata.to_xml(
-        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
-    ).decode("utf-8")
-
-
-def write_index(metadata: str, path: str) -> None:
-    """Writes metadata to mos-object-types.xml in a given directory"""
-    with open(f"{path}/mos-object-types.xml", "w") as f:
-        f.write(metadata)
+# def write_index(metadata: str, path: str) -> None:
+#     """Writes metadata to mos-object-types.xml in a given directory"""
+#     with open(f"{path}/mos-object-types.xml", "w") as f:
+#         f.write(metadata)
 
 
 def write_manifest(metadata: str, path: str) -> None:
@@ -74,13 +73,11 @@ def write_manifest(metadata: str, path: str) -> None:
         f.write(metadata)
 
 
-def generate_file_name(metadata_file, suffix, output_dir):
+def generate_file_name(metadata, suffix, output_dir):
     date_key = "ImageDate(yyyymmdd)"
     time_key = "CalculatedImageCentreTime"
 
-    if type(metadata_file) is dict:
-        metadata = metadata_file
-
+    if type(metadata) is dict:
         if not (date_key in metadata.keys() and time_key in metadata.keys()):
             raise Exception(f"Required metadata not available. Needs {date_key} " f"and {time_key}")
 

@@ -378,7 +378,7 @@ def get_band_index(colour, wavelengths):
 
 def generate_metadata(file_identifier, data=None, metadata: dict = None, image=None, report=None):
     # TODO: check inputs and update/remove if not needed
-    xml = EarthObservation(id=file_identifier, data=metadata).to_xml(
+    xml = EarthObservation(file_id=file_identifier, data=metadata).to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True
     )
 

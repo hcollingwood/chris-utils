@@ -320,7 +320,7 @@ propcache==0.3.2
     # via
     #   aiohttp
     #   yarl
-psutil==7.0.0
+psutil==7.1.0
     # via distributed
 pyarrow==21.0.0
     # via dask-expr

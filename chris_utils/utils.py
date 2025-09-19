@@ -2,7 +2,7 @@ import logging
 import os
 
 
-def get_list_of_files(inputs):
+def get_list_of_files(inputs: list):
     files = []
 
     error_message = "%s not recognised. Ensure that path is valid"
