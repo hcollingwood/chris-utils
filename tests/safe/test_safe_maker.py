@@ -97,6 +97,7 @@ def test_make_safe():
 
         metadata_path = f"{safe_path}/metadata"
         measurement_path = f"{safe_path}/measurement"
+        assert len(os.listdir(safe_path)) == 3  # original file and SAFE package
         assert os.path.isdir(metadata_path)
         assert os.path.isdir(measurement_path)
         assert os.path.isfile(f"{safe_path}/MANIFEST.XML")
