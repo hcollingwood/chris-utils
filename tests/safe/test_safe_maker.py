@@ -2,7 +2,11 @@ import tempfile
 
 import pytest
 
-from chris_utils.safe.safe_maker import calculate_crc_checksum, generate_file_name, write_manifest
+from chris_utils.safe.safe_maker import (
+    calculate_crc_checksum,
+    generate_file_name,
+    write_manifest,
+)
 
 
 @pytest.fixture
