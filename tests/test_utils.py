@@ -5,12 +5,11 @@ from chris_utils.utils import get_list_of_files, get_version
 
 def test_get_list_of_files(fs):
     top_level_path = "/home/top_level"
-    subdir_path = "/home/top_level/subdir"
     cog_path = "/home/top_level/subdir/cog/cog.cog"
     zarr_path = "/home/top_level/subdir/zarr/zarr.zarr"
     safe_path = "/home/top_level/subdir/safe/safe.SAFE"
     unrelated_path = "/home/top_level/subdir/other/other.other"
-    paths = [top_level_path, subdir_path, cog_path, zarr_path, safe_path, unrelated_path]
+    paths = [top_level_path, cog_path, zarr_path, safe_path, unrelated_path]
 
     for p in paths:
         fs.create_dir(p)
