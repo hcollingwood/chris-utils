@@ -262,7 +262,8 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
         uom_deg = "deg"
         illumination_azimuth_angle = metadata["illumination_azimuth_angle"]
         illumination_elevation_angle = metadata["illumination_elevation_angle"]
-        pos_list = "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"  # aoi box  leave for now
+        # this is the aoi box - leave for now:
+        pos_list = "0.43* 112.969 -0.421 112.969 -0.421 113.443 0.43 113.443 0.43 112.969"
         pos = "0.0045000384979* 113.206"  # leave for now
         eo_sip_file_name = f"{id}.SIP.ZIP"
         uom_bytes = "bytes"

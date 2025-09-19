@@ -1,5 +1,6 @@
-from chris_utils.safe.manifest_xml_generator import calculate_md5_checksum
 import tempfile
+
+from chris_utils.safe.manifest_xml_generator import calculate_md5_checksum
 
 
 def test_calculate_md5_checksum():

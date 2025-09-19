@@ -47,7 +47,7 @@ def parse_chris_hdr_txt(txt_path: str, keep_spectral_table: bool = False) -> Dic
                     row_vals = re.split(r"\s+", text)
                     # only add if same length as header
                     if len(row_vals) == len(columns):
-                        spectral_rows.append(dict(zip(columns, row_vals)))
+                        spectral_rows.append(dict(zip(columns, row_vals, strict=False)))
                     continue
 
                 # if not keeping the table, skip it
@@ -78,7 +78,7 @@ def parse_chris_hdr_txt(txt_path: str, keep_spectral_table: bool = False) -> Dic
                 elif in_table and keep_spectral_table and raw.strip():
                     row_vals = re.split(r"\s+", raw.strip())
                     if len(row_vals) == len(columns):
-                        spectral_rows.append(dict(zip(columns, row_vals)))
+                        spectral_rows.append(dict(zip(columns, row_vals, strict=False)))
 
     # attach spectral table if we collected it
     if keep_spectral_table:
