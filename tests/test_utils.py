@@ -1,6 +1,6 @@
 import tempfile
 
-from chris_utils.utils import get_version, get_list_of_files
+from chris_utils.utils import get_list_of_files, get_version
 
 
 def test_get_list_of_files(fs):
