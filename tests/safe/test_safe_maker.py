@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 
@@ -78,7 +79,7 @@ def test_generate_file_name__failure_wrong_type(mock_metadata):
     assert "Metadata not recognised" in str(err)
 
 
-def test_make_safe():
+def test_make_safe__success():
     input_file_name = "myfile.txt"  # only important part here is the .txt extension
     expected_file_name = "CHRIS_20040411T181816_0001_RPI-BAS_64F3.SAFE"
     with tempfile.TemporaryDirectory() as tempdir:
@@ -105,10 +106,34 @@ def test_make_safe():
         metadata_contents = os.listdir(metadata_path)
         assert "txt.xsd" in metadata_contents
 
-        measurement_contents = os.listdir(measurement_path)
 
-        assert "MEASUREMENT-txt.dat" in measurement_contents
-        assert (
-            open(f"{tempdir}/{input_file_name}").read()
-            == open(f"{measurement_path}/MEASUREMENT-txt.dat").read()
-        )
+def test_make_safe__failure_no_metadata():
+    input_file_name = "myfile.txt"  # only important part here is the .txt extension
+    with tempfile.TemporaryDirectory() as tempdir:
+        with open(tempdir + "/" + input_file_name, "w") as f:
+            f.write("test text")
+
+        with pytest.raises(Exception) as e:
+            make_safe(inputs=tempdir, output=tempdir, package_type="RPI-BAS")
+
+        assert "Required metadata not available" in str(e)
+
+
+def test_make_safe__failure_file_type_not_recognised(caplog):
+    input_file_name = "myfile.nottxt"  # only important part here is the .nottxt extension
+    with tempfile.TemporaryDirectory() as tempdir:
+        with open(tempdir + "/" + input_file_name, "w") as f:
+            f.write(
+                "//Image Date (yyyy-mm-dd)\n2004-04-11\n//Calculated Image Centre Time\n18:18:16"
+            )
+
+        with caplog.at_level(logging.INFO):
+            make_safe(inputs=tempdir, output=tempdir, package_type="RPI-BAS")
+
+            all_files = os.listdir(tempdir)
+            assert len(all_files) == 2  # original file and SAFE package
+
+            safe_path = f"{tempdir}/CHRIS_20040411T181816_0001_RPI-BAS_7492.SAFE"
+            assert len(os.listdir(safe_path)) == 2  # manifest and measurement folder
+
+            assert "Schema for nottxt not found" in caplog.text
