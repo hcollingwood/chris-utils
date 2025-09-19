@@ -6,8 +6,8 @@ import pytest
 from chris_utils.safe.safe_maker import (
     calculate_crc_checksum,
     generate_file_name,
-    write_manifest,
     make_safe,
+    write_manifest,
 )
 
 
