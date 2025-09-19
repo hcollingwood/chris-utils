@@ -17,7 +17,7 @@ from PIL import Image, TiffImagePlugin
 
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
-from chris_utils.utils import get_list_of_files
+from chris_utils.utils import get_list_of_files, get_version
 
 mode_to_product_type = {
     "1": "CHR_MO1_1P",
@@ -143,9 +143,9 @@ def check_metadata(metadata: dict):
 #         # import sys;sys.exit()
 #
 #         # view = views[-1]
-#         # thumbnail_r = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
-#         # thumbnail_g = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
-#         # thumbnail_b = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))
+#         # thumbnail_r = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))   # noqa: E501
+#         # thumbnail_g = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))   # noqa: E501
+#         # thumbnail_b = dataset.read(1, out_shape=(1, int(dataset.height // view), int(dataset.width // view)))   # noqa: E501
 #
 #         thumbnail_r = dataset.read(r_band)
 #         thumbnail_g = dataset.read(g_band)
@@ -189,7 +189,7 @@ def process_cog(path):
 
     file_data = []
     file_root = "/".join(path.rsplit("/")[:-1])
-    for root_path, dirs, files in os.walk(path):
+    for root_path, _, files in os.walk(path):
         for file in files:
             file_path = os.path.join(root_path, file)
             if os.path.isfile(file_path):
@@ -304,7 +304,7 @@ def process_zarr(path):
 
     file_data = []
     file_root = "/".join(path.rsplit("/")[:-1])
-    for root_path, dirs, files in os.walk(path):
+    for root_path, _, files in os.walk(path):
         for file in files:
             file_path = os.path.join(root_path, file)
             if os.path.isfile(file_path):
@@ -333,10 +333,10 @@ def make_cog_thumbnail(image_data, metadata) -> bytes:
     return img_byte_arr.getvalue()
 
 
-def process_safe(path):
+def process_safe(folder_path):
     file_data = []
-    file_root = "/".join(path.rsplit("/")[:-1])
-    for path, dirs, files in os.walk(path):
+    file_root = "/".join(folder_path.rsplit("/")[:-1])
+    for path, _, files in os.walk(folder_path):
         for file in files:
             file_path = f"{path}/{file}"
             if os.path.isfile(file_path):
@@ -393,16 +393,16 @@ def generate_info(file_identifier):
     return xml
 
 
-def get_version(root, output_folder="."):
-    version = 1
-    while True:
-        padded_number = f"{version:0>4}"
-
-        file = f"{output_folder}/{root}_{padded_number}.ZIP"
-        if os.path.exists(file):
-            version += 1
-        else:
-            return padded_number
+# def get_version(root, output_folder="."):
+#     version = 1
+#     while True:
+#         padded_number = f"{version:0>4}"
+#
+#         file = f"{output_folder}/{root}_{padded_number}.ZIP"
+#         if os.path.exists(file):
+#             version += 1
+#         else:
+#             return padded_number
 
 
 def write_to_file(data, file_name):
@@ -471,7 +471,11 @@ def format_longitude(raw: str) -> str:
 def generate_file_name(metadata) -> str:
     """Generates a file name from the provided metadata"""
 
-    return f'{metadata["sat_id"]}_{metadata["file_class"]}_{metadata["product_type"]}_{metadata["formatted_timestamp"]}_{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}'
+    return (
+        f'{metadata["sat_id"]}_{metadata["file_class"]}_'
+        f'{metadata["product_type"]}_{metadata["formatted_timestamp"]}_'
+        f'{metadata["formatted_latitude"]}_{metadata["formatted_longitude"]}'
+    )
 
 
 def get_file_size(path):
@@ -479,7 +483,7 @@ def get_file_size(path):
         total_size = os.path.getsize(path)
     else:
         total_size = 0
-        for root_path, dirs, files in os.walk(path):
+        for root_path, _, files in os.walk(path):
             for file in files:
                 file_path = os.path.join(root_path, file)
                 if not os.path.islink(file_path):
@@ -537,7 +541,8 @@ def calculate_angles(metadata):
         sin_deg(latitude) * sin_deg(declination_deg)
         + cos_deg(latitude) * cos_deg(declination_deg) * cos_deg(solar_hour_angle)
     )
-    # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
+    # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - \
+    #              cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
     azimuth_deg = 180 - acos_deg(
         -(sin_deg(latitude) * cos_deg(zenith_deg) - sin_deg(declination_deg))
         / (cos_deg(latitude) * sin_deg(zenith_deg))
@@ -589,7 +594,8 @@ def convert_eo_sip(
         raw_metadata["formatted_longitude"] = format_longitude(raw_metadata["chris_longitude"])
 
         timestamp = datetime.strptime(
-            f"{raw_metadata['chris_image_date_yyyy_mm_dd_']} {raw_metadata['chris_calculated_image_centre_time']}",
+            f"{raw_metadata['chris_image_date_yyyy_mm_dd_']} "
+            f"{raw_metadata['chris_calculated_image_centre_time']}",
             "%Y-%m-%d %H:%M:%S",
         )
         raw_metadata["timestamp"] = timestamp
@@ -600,7 +606,7 @@ def convert_eo_sip(
             calculate_angles(raw_metadata)
         )
 
-        version = get_version(file_name_root, output)
+        version = get_version(file_name_root, ".ZIP", output)
         file_name = f"{file_name_root}_{version}"
 
         xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)

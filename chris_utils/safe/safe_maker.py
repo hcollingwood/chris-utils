@@ -2,10 +2,21 @@ import argparse
 import binascii
 import logging
 import os
+import re
 import shutil
+import tempfile
 
-from chris_utils.safe.safe_measurement_metadata_xml_generator import Schema
-from chris_utils.safe.safe_metadata_xml_generator import XFDU
+import pandas as pd
+
+from chris_utils.safe.manifest_xml_generator import XFDU
+from chris_utils.safe.measurement_metadata_generator import Schema
+from chris_utils.safe.metadata_config import (
+    dat_schema,
+    hdr_schema,
+    set_schema,
+    txt_schema,
+)
+from chris_utils.utils import get_version
 
 valid_package_types = [
     "RPI-BAS",
@@ -16,6 +27,13 @@ valid_package_types = [
     "DAT-AUX",
 ]
 
+xml_schemas = {
+    "dat": dat_schema(),
+    "txt": txt_schema(),
+    "hdr": hdr_schema(),
+    "set": set_schema(),
+}
+
 
 def calculate_crc_checksum(data: str) -> str:
     """Uses CRC-16 checksums"""
@@ -24,41 +42,115 @@ def calculate_crc_checksum(data: str) -> str:
     return f"{crc:04X}"  # 4 hexadecimal characters
 
 
-def make_file_metadata(paths: list) -> str:
+def make_manifest(paths: list = None) -> str:
+    """Generates manifest"""
+
+    manifest = XFDU(data_objects=paths)
+
+    return manifest.to_xml(
+        pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
+    ).decode("utf-8")
+
+
+def make_xsd(file_type: str) -> str:
     """Generates metadata"""
 
-    metadata = XFDU(data_objects=paths)
+    metadata = Schema(file_type=file_type)
 
     return metadata.to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True, exclude_unset=True
     ).decode("utf-8")
 
 
-def write_metadata(metadata: str, path: str) -> None:
-    """Writes metadata to manifest.xml in a given directory"""
-    with open(f"{path}/manifest.xml", "w") as f:
+def write_index(metadata: str, path: str) -> None:
+    """Writes metadata to mos-object-types.xml in a given directory"""
+    with open(f"{path}/mos-object-types.xml", "w") as f:
         f.write(metadata)
 
 
-def copy_mos_file(output_file_path) -> None:
-    """Copies mos-object-types.xsd file"""
-    mos_file_name = "mos-object-types.xsd"
-    shutil.copy(f"chris_utils/safe/{mos_file_name}", f"{output_file_path}/{mos_file_name}")
+def write_manifest(metadata: str, path: str) -> None:
+    """Writes metadata to manifest.xml in a given directory"""
+    with open(f"{path}/MANIFEST.XML", "w") as f:
+        f.write(metadata)
+
+
+def generate_file_name(metadata_file, suffix, output_dir):
+    date_key = "ImageDate(yyyymmdd)"
+    time_key = "CalculatedImageCentreTime"
+
+    if type(metadata_file) is dict:
+        metadata = metadata_file
+
+        if not (date_key in metadata.keys() and time_key in metadata.keys()):
+            raise Exception(f"Required metadata not available. Needs {date_key} " f"and {time_key}")
+
+    else:
+        raise Exception("Metadata not recognised")
+
+    timestamp = metadata[date_key] + "T" + metadata[time_key]
+
+    root = f"CHRIS_{re.sub('[^0-9a-zA-Z]+', '', timestamp)}"
+
+    version = get_version(root, suffix, output_dir)
+
+    return f"{root}_{version}{suffix}"
+
+
+class HeaderData:
+    def __init__(self, path):
+        self.path = path
+        self.read_data(path)
+
+    def read_data(self, path):
+        with open(path, "r") as f:
+            lines = f.readlines()
+
+        for i in range(len(lines)):
+            if lines[i].startswith("//"):
+                var = lines[i].replace(" ", "").replace("-", "")[2:].strip("\n")
+
+                values = []
+                for j in range(i + 1, len(lines)):
+                    next_line = lines[j]
+                    if next_line.startswith("//"):
+                        break
+
+                    if "\t" not in next_line:
+                        values.append(next_line.strip("\n"))
+                    else:
+                        values.append(next_line.strip("\n").split("\t"))
+
+                if len(values) == 1:
+                    values = values[0]
+
+                if any(isinstance(el, list) for el in values):  # checks for list of lists
+                    number_of_columns = len(values[0])
+                    columns = lines[i].removeprefix("//").removesuffix("\n").split("\t")
+                    if not len(columns) == number_of_columns:
+                        columns = lines[i].removeprefix("//").removesuffix("\n").split()
+
+                    values = pd.DataFrame(values, columns=columns)
+
+                    for k in reversed(range(0, i)):
+                        var = lines[k].replace(" ", "").replace("-", "")[2:].strip("\n")
+                        if var:
+                            break
+
+                setattr(self, var, values)
 
 
 def make_safe(
     inputs: str,
     output: str = ".",
     package_type: str = None,
-    mode: str = "1",
-    file_class: str = "OPER",
-    sat_id="PR1",
 ):
     """Generates SAFE archive for specified input file(s)"""
 
-    # TODO: update/remove any unused input variables
     if not os.path.exists(output):
         os.makedirs(output)
+
+    file_types = set()
+    all_paths = []
 
     processing_message = "Processing %s"
     packaging_message = "Packaging %s"
@@ -67,7 +159,7 @@ def make_safe(
         logging.info(processing_message, file)
 
         paths = []
-        for root, dirs, files in os.walk(file):
+        for root, _, files in os.walk(file):
             for f in files:
                 paths.append(os.path.join(root, f))
 
@@ -77,51 +169,81 @@ def make_safe(
                 raise Exception(f"Package type {package_type} not in {valid_package_types}")
             package_type_tag = f"_{package_type}"
 
-        metadata = make_file_metadata(paths)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            logging.info(packaging_message, temp_dir)
 
-        checksum = calculate_crc_checksum(metadata)
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
 
-        if os.path.isabs(file):
-            output_root = f"{output}/{file.split('/')[-1]}"
-        else:
-            output_root = f"{output}/{file}"
+            measurement_dir = f"{temp_dir}/measurement"
+            metadata_dir = f"{temp_dir}/metadata"
+            documentation_dir = f"{temp_dir}/documentation"  # these are optional
+            index_dir = f"{temp_dir}/index"  # these are optional
+            dir_list = [measurement_dir, metadata_dir, documentation_dir, index_dir]
 
-        output_file_path = f"{output_root}{package_type_tag}_{checksum}.SAFE"
+            for d in dir_list:
+                if not os.path.exists(d):
+                    os.makedirs(d)
 
-        logging.info(packaging_message, output_file_path)
+            metadata = {}
+            for path in paths:
+                file_type = os.path.splitext(path)[1][1:].lower()
+                output_dat_path = f"{measurement_dir}/MEASUREMENT-{file_type}.dat"
+                shutil.copy(path, output_dat_path)
+                file_types.add(file_type)
+                all_paths.append(output_dat_path)
 
-        if not os.path.exists(output_file_path):
-            os.makedirs(output_file_path)
+                try:
+                    metadata = metadata | HeaderData(path).__dict__
 
-        write_metadata(metadata, output_file_path)
-        for path in paths:
-            file_name = path.split("/")[-1]
-            shutil.copy(path, f"{output_file_path}/{file_name}")
-            measurement_xml = (
-                Schema(
-                    target_namespace="http://www.esa.int/safe/1.2/mos",
-                    xmlns="http://www.esa.int/safe/1.2/mos",
-                )
-                .to_xml(
-                    pretty_print=True,
-                    encoding="UTF-8",
-                    standalone=True,
-                    exclude_unset=True,
-                )
-                .decode("utf-8")
-            )
+                except UnicodeDecodeError:
+                    pass
 
-            with open(f"{output_file_path}/{file_name}.xsd", "w") as f:
-                f.write(measurement_xml)
+            for file_type in file_types:
+                try:
+                    xml = (
+                        xml_schemas[file_type]
+                        .to_xml(
+                            pretty_print=True,
+                            encoding="UTF-8",
+                            standalone=True,
+                            exclude_unset=True,
+                        )
+                        .decode("utf-8")
+                    )
 
-            copy_mos_file(output_file_path)
+                    output_xsd_path = f"{metadata_dir}/{file_type}.xsd"
+                    with open(output_xsd_path, "w") as f:
+                        f.write(xml)
+                        all_paths.append(output_xsd_path)
+
+                except KeyError:
+                    logging.error(f"Schema for {file_type} not found")
+
+            all_paths.sort()
+            manifest = make_manifest(all_paths)
+            checksum = calculate_crc_checksum(manifest)
+            output_file_ending = f"{package_type_tag}_{checksum}.SAFE"
+
+            output_file_name = generate_file_name(metadata, output_file_ending, output)
+
+            output_file_path = f"{output}/{output_file_name}"
+
+            if not os.path.exists(output_file_path):
+                os.makedirs(output_file_path)
+
+            write_manifest(manifest, output_file_path)
+
+            for d in dir_list:
+                if len(os.listdir(d)) == 0:
+                    shutil.rmtree(d)
+
+            shutil.copytree(temp_dir, output_file_path, dirs_exist_ok=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="EO-SIP")
     parser.add_argument("--inputs", help="list of input files", default=None)
-    parser.add_argument("--sat_id", help="satellite identifier", default="PR1")
-    parser.add_argument("--file_class", help="file class", default="OPER")
     parser.add_argument("--mode", help="mode", default="1")
     parser.add_argument("--output", help="output folder", default=".")
     parser.add_argument("--package_type", help="type of package", default=None)
@@ -131,7 +253,4 @@ if __name__ == "__main__":
         inputs=args.inputs,
         output=args.output,
         package_type=args.package_type,
-        mode=args.mode,
-        file_class=args.file_class,
-        sat_id=args.sat_id,
     )

@@ -1,5 +1,10 @@
-from chris_utils.eo_sip.eo_sip_converter import check_metadata, format_latitude, format_longitude
 import pytest
+
+from chris_utils.eo_sip.eo_sip_converter import (
+    check_metadata,
+    format_latitude,
+    format_longitude,
+)
 
 
 @pytest.fixture()
@@ -24,7 +29,9 @@ def mock_metadata():
         "chris_image_target_code": "AU",
         "chris_lattitude": "031.60",
         "chris_longitude": "-110.54",
-        "chris_mask_key_information": "0 = useful pixels;1 = Ch2 reset pixels;2 = Saturated data pixels",
+        "chris_mask_key_information": "0 = useful pixels;"
+        "1 = Ch2 reset pixels;"
+        "2 = Saturated data pixels",
         "chris_minimum_zenith_angle": "025",
         "chris_no_of_bands_followed_by_band_position_of_smear": "018",
         "chris_no_of_ground_lines": "0748",
@@ -35,7 +42,14 @@ def mock_metadata():
         "chris_response_file_creation_time": "2004-13-18 10:56",
         "chris_sensor_type": "CHRIS",
         "chris_solar_zenith_angle": "028.00",
-        "chris_statement_of_data_rights": "Sira Technology Ltd is the owner of all data directly resulting from in-flight operation of the CHRIS instrument flown on-board the ESA PROBA spacecraft.  All publications on the CHRIS instrument or data obtained from the CHRIS development and/or operation shall make explicit reference to Sira Technology Ltd the CHRIS instrument and the ESA PROBA mission.",
+        "chris_statement_of_data_rights": "Sira Technology Ltd is the owner of all data "
+        "directly resulting from in-flight operation of the "
+        "CHRIS instrument flown on-board the ESA PROBA "
+        "spacecraft.  All publications on the CHRIS "
+        "instrument or data obtained from the CHRIS "
+        "development and/or operation shall make explicit "
+        "reference to Sira Technology Ltd the CHRIS instrument "
+        "and the ESA PROBA mission.",
         "chris_target_name": "Audobon",
         "data type": 3,
         "datetime": "2004-04-11T18:18:16Z",
