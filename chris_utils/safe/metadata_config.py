@@ -76,52 +76,6 @@ def dat_schema():
     return xml
 
 
-def txt_schema():
-    complex_elements = [
-        Element(
-            name="txt",
-            type="txtType",
-            annotation=Annotation(
-                documentation=Documentation(
-                    lang="en", value="The file contains metadata in plain " "text format."
-                ),
-                app_info=AppInfo(
-                    block=Block(
-                        encoding=BlockEncoding(value="ASCII"),
-                    )
-                ),
-            ),
-        )
-    ]
-
-    complex_type = [
-        ComplexType(
-            name="txtType",
-            sequence=Sequence(elements=complex_elements),
-        ),
-    ]
-
-    documentation = Documentation(
-        lang="en",
-        value="A SAFE product generated with CHRIS PROBA-1 data includes "
-        "one .txt file, containing image attribute data. File is to "
-        "be read vertically with attributes denoted by lines "
-        "starting with '//' and the corresponding value on the line "
-        "below.",
-    )
-    element = Element(
-        name="txt",
-        type="txtType",
-        annotation=Annotation(documentation=documentation),
-    )
-    xml = DATSchema(
-        element=element,
-        complex_type=complex_type,
-    )
-
-    return xml
-
-
 def hdr_schema():
     complex_elements = [
         Element(
@@ -202,6 +156,52 @@ def set_schema():
     element = Element(
         name="set",
         type="setType",
+        annotation=Annotation(documentation=documentation),
+    )
+    xml = DATSchema(
+        element=element,
+        complex_type=complex_type,
+    )
+
+    return xml
+
+
+def txt_schema():
+    complex_elements = [
+        Element(
+            name="txt",
+            type="txtType",
+            annotation=Annotation(
+                documentation=Documentation(
+                    lang="en", value="The file contains metadata in plain " "text format."
+                ),
+                app_info=AppInfo(
+                    block=Block(
+                        encoding=BlockEncoding(value="ASCII"),
+                    )
+                ),
+            ),
+        )
+    ]
+
+    complex_type = [
+        ComplexType(
+            name="txtType",
+            sequence=Sequence(elements=complex_elements),
+        ),
+    ]
+
+    documentation = Documentation(
+        lang="en",
+        value="A SAFE product generated with CHRIS PROBA-1 data includes "
+        "one .txt file, containing image attribute data. File is to "
+        "be read vertically with attributes denoted by lines "
+        "starting with '//' and the corresponding value on the line "
+        "below.",
+    )
+    element = Element(
+        name="txt",
+        type="txtType",
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(

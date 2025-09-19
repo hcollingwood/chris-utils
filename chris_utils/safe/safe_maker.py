@@ -28,9 +28,9 @@ valid_package_types = [
 
 xml_schemas = {
     "dat": dat_schema(),
-    "txt": txt_schema(),
     "hdr": hdr_schema(),
     "set": set_schema(),
+    "txt": txt_schema(),
 }
 
 
