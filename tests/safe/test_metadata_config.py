@@ -1,4 +1,9 @@
-from chris_utils.safe.metadata_config import dat_schema, txt_schema, hdr_schema, set_schema
+from chris_utils.safe.metadata_config import (
+    dat_schema,
+    hdr_schema,
+    set_schema,
+    txt_schema,
+)
 
 
 # These tests aren't very thorough and don't test the contents of the
