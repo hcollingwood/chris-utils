@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -18,27 +19,45 @@ def _norm_keys(d: dict) -> dict:
     return {re.sub(r"\s+", " ", k).strip().lower(): v for k, v in d.items()}
 
 
+def _gsd_from_mode(chris_meta: dict) -> int:
+    """Return nominal GSD (metres) from 'CHRIS Mode' in metadata.
+
+    Mode 1 → 36 m; any other (2-5) or missing/invalid → 18 m.
+    """
+    mode_val = _norm_keys(chris_meta).get("chris mode")
+    try:
+        mode_num = int(mode_val)
+    except (TypeError, ValueError):
+        return 18
+    return 36 if mode_num == 1 else 18
+
+
+def _radiance_units(envi_header: dict, root_attrs: dict) -> str | None:
+    # Prefer the CHRIS/EOPF field if present; otherwise fall back to ENVI key
+    return (
+        root_attrs.get("chris_calibration_data_units")
+        or envi_header.get("calibration data units")
+        or envi_header.get("chris_calibration_data_units")
+    )
+
+
 def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     """
     Build and return an EOProduct populated with:
-      - Groups measurements → reflectance → r{gsd}m
-      - x/y coords
-      - one EOVariable per band
-      - merged attrs (ENVI + EOPF root + minimal STAC discovery)
+      - Groups
+            measurements/
+                image/
+                y, x
+                oa01_radiance, oa02_radiance, ...
     """
     # parse CHRIS metadata & EOPF root attrs
     chris_meta = parse_chris_hdr_txt(hdr_txt_path)
     root_attrs = build_eopf_root_attrs(chris_meta, hdr_txt_path)
 
     # determine GSD (18 or 36)
-    norm = _norm_keys(chris_meta)
-    mode_str = norm.get("chris mode")
-    try:
-        mode = int(mode_str) if mode_str is not None else 2
-    except (TypeError, ValueError):
-        mode = 2
-    gsd = 36 if mode == 1 else 18
-    res_grp = f"measurements/reflectance/r{gsd}m"
+    gsd = _gsd_from_mode(chris_meta)
+    logging.info(f"CHRIS operating in mode {gsd}")
+    base = "measurements/image"
 
     # if caller gave us a product_name, use that; otherwise fallback to hdr stem
     if product_name:
@@ -50,21 +69,31 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     # start building
     product = EOProduct(name=name)
     product["measurements"] = EOGroup()
-    product["measurements/reflectance"] = EOGroup()
-    product[res_grp] = EOGroup()
+    product[base] = EOGroup()
 
     # coords
-    product[f"{res_grp}/y"] = EOVariable(data=da["y"].values, dims=("y",))
-    product[f"{res_grp}/x"] = EOVariable(data=da["x"].values, dims=("x",))
+    product[f"{base}/y"] = EOVariable(data=da["y"].values, dims=("y",))
+    product[f"{base}/x"] = EOVariable(data=da["x"].values, dims=("x",))
+
+    # pick up units if present (e.g. "microWatts/nm/m^2/str") and wavelength
+    units = _radiance_units(envi_header, root_attrs)
+    has_wl = "wavelength" in da.coords
 
     # one variable per band
-    for bi in da["band"].values:
-        bname = f"b{int(bi):02d}"
+    for idx, bi in enumerate(da["band"].values, start=1):
+        vname = f"oa{idx:02d}_radiance"  # CPM naming
         arr2d = da.sel(band=bi).values
-        product[f"{res_grp}/{bname}"] = EOVariable(
-            data=arr2d,
-            dims=("y", "x"),
-        )
+        var = EOVariable(data=arr2d, dims=("y", "x"))
+        # annotate measurement + units (+ wavelength if available)
+        var.attrs["measurement"] = "radiance"
+        if units:
+            var.attrs["units"] = units
+        if has_wl:
+            try:
+                var.attrs["wavelength_nm"] = float(da["wavelength"].sel(band=bi))
+            except Exception:
+                pass
+        product[f"{base}/{vname}"] = var
 
     # minimal STAC discovery
     props = {
@@ -79,7 +108,12 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     product.attrs.update(envi_header)
     product.attrs.update(root_attrs)
 
-    return product, res_grp
+    # product-level measurement
+    product.attrs["measurement"] = "radiance"
+    if units:
+        product.attrs["measurement:units"] = units
+
+    return product, base
 
 
 def write_eopf_zarr(da, envi_header, hdr_txt_path, out_zarr_path):
@@ -98,7 +132,7 @@ def write_eopf_cog(da, envi_header, hdr_txt_path, out_cog_dir):
     """Write an EOPF-compliant COG directory (ending in .cog)."""
     # Build the EOProduct and determine the resolution group
     product_name = os.path.splitext(os.path.basename(out_cog_dir))[0]
-    product, res_grp = _build_eopf_product(da, envi_header, hdr_txt_path, product_name)
+    product, base = _build_eopf_product(da, envi_header, hdr_txt_path, product_name)
 
     # Ensure the output .cog directory exists
     os.makedirs(out_cog_dir, exist_ok=True)
@@ -111,8 +145,5 @@ def write_eopf_cog(da, envi_header, hdr_txt_path, out_cog_dir):
         # 2) measurements group folder + its attrs
         store["measurements"] = product["measurements"]
 
-        # 3) reflectance subgroup folder + its attrs
-        store["measurements/reflectance"] = product["measurements/reflectance"]
-
-        # 4) the r{gsd}m folder, which will write one TIFF per band
-        store[res_grp] = product[res_grp]
+        # 3) radiance subgroup folder + its attrs
+        store[base] = product[base]
