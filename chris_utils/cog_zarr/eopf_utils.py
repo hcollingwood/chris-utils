@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -19,13 +20,16 @@ def _norm_keys(d: dict) -> dict:
 
 
 def _gsd_from_mode(chris_meta: dict) -> int:
-    # CHRIS Mode 1 = ~36m; all others ≈ 18m
-    mode_s = _norm_keys(chris_meta).get("chris mode")
+    """Return nominal GSD (metres) from 'CHRIS Mode' in metadata.
+
+    Mode 1 → 36 m; any other (2-5) or missing/invalid → 18 m.
+    """
+    mode_val = _norm_keys(chris_meta).get("chris mode")
     try:
-        m = int(mode_s) if mode_s is not None else 2
-    except Exception:
-        m = 2
-    return 36 if m == 1 else 18
+        mode_num = int(mode_val)
+    except (TypeError, ValueError):
+        return 18
+    return 36 if mode_num == 1 else 18
 
 
 def _radiance_units(envi_header: dict, root_attrs: dict) -> str | None:
@@ -52,6 +56,7 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
 
     # determine GSD (18 or 36)
     gsd = _gsd_from_mode(chris_meta)
+    logging.info(f"CHRIS operating in mode {gsd}")
     base = "measurements/image"
 
     # if caller gave us a product_name, use that; otherwise fallback to hdr stem

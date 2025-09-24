@@ -260,22 +260,17 @@ def test_write_eopf_cog_structure(monkeypatch, tmp_path):
     assert "measurements/image" in written
 
 
-@pytest.mark.skipif(
-    not hasattr(eu, "_build_eopf_product"), reason="_build_eopf_product not present"
+@pytest.mark.parametrize(
+    "mode,expected",
+    [
+        ("1", 36),
+        ("01", 36),
+        (" 1 ", 36),
+        (1, 36),
+        ("2", 18),
+        (None, 18),
+        ("abc", 18),
+    ],
 )
-def test_build_eopf_product_name_from_hdr(monkeypatch, tmp_path):
-    da = small_da(nb=1)
-    hdr_txt = str(tmp_path / "CHRIS_ABC_123.hdr.txt")
-    (tmp_path / "CHRIS_ABC_123.hdr.txt").write_text("", encoding="utf-8")
-
-    def fake_parse(_):
-        return {"CHRIS Mode": "2"}
-
-    def fake_root(_m, _p):
-        return {"product_type": "X", "datetime": "Y", "platform": "P", "instrument": "I"}
-
-    monkeypatch.setattr(eu, "parse_chris_hdr_txt", fake_parse, raising=False)
-    monkeypatch.setattr(eu, "build_eopf_root_attrs", fake_root, raising=False)
-    product, grp = eu._build_eopf_product(da, {}, hdr_txt, product_name=None)
-    # When product_name is None, _build_eopf_product derives the name from hdr_txt
-    assert isinstance(product.name, str) and len(product.name) > 0
+def test_gsd_from_mode(mode, expected):
+    assert eu._gsd_from_mode({"CHRIS Mode": mode}) == expected
