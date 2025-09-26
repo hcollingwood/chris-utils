@@ -17,7 +17,7 @@ from PIL import Image, TiffImagePlugin
 
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
-from chris_utils.utils import get_list_of_files, get_version
+from chris_utils.utils import check_metadata, get_list_of_files, get_version
 
 mode_to_product_type = {
     "1": "CHR_MO1_1P",
@@ -51,7 +51,7 @@ def acos_deg(angle):
     return math.degrees(math.cos(angle))
 
 
-def check_metadata(metadata: dict):
+def do_metadata_check(metadata: dict):
     regex_checks = {
         "chris_lattitude": r"[-]?\d+\.\d+",
         "chris_longitude": r"[-]?\d+\.\d+",
@@ -69,65 +69,7 @@ def check_metadata(metadata: dict):
         "chris_calculated_image_centre_time": "%H:%M:%S",
     }
 
-    missing_values = set()
-    invalid_values = set()
-
-    for key in regex_checks.keys():
-        if not metadata.get(key):
-            missing_values.add(key)
-            break
-
-        try:
-            if not re.match(f"^{regex_checks[key]}$", metadata[key]):
-                invalid_values.add(key)
-        except TypeError:
-            invalid_values.add(key)
-
-    for key in list_checks.keys():
-        if not metadata.get(key):
-            missing_values.add(key)
-            break
-
-        var_type = list_checks[key]
-        try:
-            if not all([type(x) == var_type for x in metadata[key]]):
-                invalid_values.add(key)
-
-        except ValueError:
-            invalid_values.add(key)
-
-    for key in numeric_string_checks.keys():
-        if not metadata.get(key):
-            missing_values.add(key)
-            break
-
-        min_value, max_value = numeric_string_checks[key]
-        value = metadata[key]
-        try:
-            if type(value) is not str:
-                invalid_values.add(key)
-                break
-            value = float(value)
-            if not min_value <= value <= max_value:
-                invalid_values.add(key)
-
-        except ValueError:
-            invalid_values.add(key)
-
-    for key in datetime_string_checks.keys():
-        if not metadata.get(key):
-            missing_values.add(key)
-            break
-
-        try:
-            datetime.strptime(metadata[key], datetime_string_checks[key])
-        except ValueError:
-            invalid_values.add(key)
-
-    if missing_values:
-        raise Exception(f"Missing metadata entries identified: {missing_values}")
-    if invalid_values:
-        raise Exception(f"Invalid metadata identified: {invalid_values}")
+    check_metadata(metadata=metadata, regex_checks=regex_checks, list_checks=list_checks, numeric_string_checks=numeric_string_checks, datetime_string_checks=datetime_string_checks)
 
 
 # def process_cog_old(path):
@@ -163,7 +105,7 @@ def check_metadata(metadata: dict):
 def process_cog(path):
     with open(f"{path}/attrs.json") as f:
         metadata = json.load(f)
-    check_metadata(metadata)
+    do_metadata_check(metadata)
 
     r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
@@ -268,7 +210,7 @@ def process_zarr(path):
     contents = xr.open_datatree(path, engine="zarr")
 
     metadata = contents.attrs
-    check_metadata(metadata)
+    do_metadata_check(metadata)
 
     r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 

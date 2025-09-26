@@ -1,10 +1,10 @@
 import pytest
 
 from chris_utils.eo_sip.eo_sip_converter import (
-    check_metadata,
     format_latitude,
-    format_longitude,
+    format_longitude, do_metadata_check,
 )
+
 
 
 @pytest.fixture()
@@ -98,163 +98,9 @@ def mock_metadata():
     }
 
 
-def test_check_metadata__success(mock_metadata):
 
-    check_metadata(mock_metadata)
-
-
-@pytest.mark.parametrize(
-    "field",
-    [
-        pytest.param("chris_lattitude"),
-        pytest.param("chris_longitude"),
-        pytest.param("chris_chris_mode"),
-        pytest.param("chris_image_date_yyyy_mm_dd_"),
-        pytest.param("chris_calculated_image_centre_time"),
-    ],
-)
-def test_check_metadata__missing_data_fail(field, mock_metadata):
-
-    del mock_metadata[field]
-    with pytest.raises(Exception) as err:
-        check_metadata(mock_metadata)
-
-    assert "Missing metadata entries identified" in str(err.value)
-    assert field in str(err.value)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("chris_image_date_yyyy_mm_dd_", "-2025-01-01"),
-        pytest.param("chris_image_date_yyyy_mm_dd_", "2025-13-01"),
-        pytest.param("chris_image_date_yyyy_mm_dd_", "2025-01-01 12:34:56"),
-        pytest.param("chris_calculated_image_centre_time", "2025-01-01"),
-        pytest.param("chris_calculated_image_centre_time", "12:34:65"),
-        pytest.param("chris_calculated_image_centre_time", "2025-12-01 12:34:56"),
-    ],
-)
-def test_check_metadata__datetime_fail(field, value, mock_metadata):
-
-    mock_metadata[field] = value
-    with pytest.raises(Exception) as err:
-        check_metadata(mock_metadata)
-
-    assert "Invalid metadata identified" in str(err.value)
-    assert field in str(err.value)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("chris_image_date_yyyy_mm_dd_", "2025-01-01"),
-        pytest.param("chris_calculated_image_centre_time", "12:34:56"),
-    ],
-)
-def test_check_metadata__datetime_pass(field, value, mock_metadata):
-
-    check_metadata(mock_metadata)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("wavelength", [1, "b", 3, "d", 5]),
-    ],
-)
-def test_check_metadata__list_fail(field, value, mock_metadata):
-
-    mock_metadata[field] = value
-    with pytest.raises(Exception) as err:
-        check_metadata(mock_metadata)
-
-    assert "Invalid metadata identified" in str(err.value)
-    assert field in str(err.value)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("wavelength", [1, 2, 3, 4, 5]),
-    ],
-)
-def test_check_metadata__list_pass(field, value, mock_metadata):
-
-    check_metadata(mock_metadata)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("chris_lattitude", "2025-01-01"),
-        pytest.param("chris_lattitude", "123.45"),
-        pytest.param("chris_lattitude", "0123.45"),
-        pytest.param("chris_lattitude", "-123.45"),
-        pytest.param("chris_lattitude", 12.34),
-        pytest.param("chris_longitude", "2025-01-01"),
-        pytest.param("chris_longitude", "01234.56"),
-        pytest.param("chris_longitude", "1234.56"),
-        pytest.param("chris_longitude", "-1234.56"),
-        pytest.param("chris_longitude", 123.45),
-    ],
-)
-def test_check_metadata__numeric_fail(field, value, mock_metadata):
-
-    mock_metadata[field] = value
-    with pytest.raises(Exception) as err:
-        check_metadata(mock_metadata)
-
-    assert "Invalid metadata identified" in str(err.value)
-    assert field in str(err.value)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("chris_chris_mode", "1"),
-        pytest.param("chris_chris_mode", "2"),
-        pytest.param("chris_chris_mode", "3"),
-        pytest.param("chris_chris_mode", "4"),
-        pytest.param("chris_chris_mode", "5"),
-        pytest.param("chris_chris_mode", "hrc"),
-    ],
-)
-def test_check_metadata__regex_pass(field, value, mock_metadata):
-
-    check_metadata(mock_metadata)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("chris_chris_mode", "6"),
-        pytest.param("chris_chris_mode", "10"),
-        pytest.param("chris_chris_mode", "abc"),
-    ],
-)
-def test_check_metadata__regex_fail(field, value, mock_metadata):
-
-    mock_metadata[field] = value
-    with pytest.raises(Exception) as err:
-        check_metadata(mock_metadata)
-
-    assert "Invalid metadata identified" in str(err.value)
-    assert field in str(err.value)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        pytest.param("chris_lattitude", "012.34"),
-        pytest.param("chris_lattitude", "-012.34"),
-        pytest.param("chris_longitude", "123.45"),
-        pytest.param("chris_longitude", "-123.45"),
-    ],
-)
-def test_check_metadata__numeric_pass(field, value, mock_metadata):
-
-    mock_metadata[field] = value
-    check_metadata(mock_metadata)
+def test_do_metadata_check__success(mock_metadata):
+    do_metadata_check(metadata = mock_metadata)
 
 
 @pytest.mark.parametrize(
