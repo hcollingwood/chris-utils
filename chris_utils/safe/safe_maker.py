@@ -1,11 +1,11 @@
 import argparse
 import binascii
-from datetime import datetime
 import logging
 import os
 import re
 import shutil
 import tempfile
+from datetime import datetime
 
 import pandas as pd
 
@@ -16,7 +16,7 @@ from chris_utils.safe.metadata_config import (
     set_schema,
     txt_schema,
 )
-from chris_utils.utils import get_version, check_metadata
+from chris_utils.utils import check_metadata, get_version
 
 valid_package_types = [
     "RPI-BAS",
@@ -139,7 +139,6 @@ class HeaderData:
                 setattr(self, var, values)
 
 
-
 def do_metadata_check(metadata: dict):
     regex_checks = {
         "ImageDate(yyyymmdd)": r"[A-z0-9-\s]+",
@@ -151,7 +150,9 @@ def do_metadata_check(metadata: dict):
         "CalculatedImageCentreTime": "%H:%M:%S",
     }
 
-    check_metadata(metadata=metadata, regex_checks=regex_checks, datetime_string_checks=datetime_string_checks)
+    check_metadata(
+        metadata=metadata, regex_checks=regex_checks, datetime_string_checks=datetime_string_checks
+    )
 
 
 def make_safe(

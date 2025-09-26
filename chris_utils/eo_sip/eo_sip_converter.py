@@ -69,7 +69,13 @@ def do_metadata_check(metadata: dict):
         "chris_calculated_image_centre_time": "%H:%M:%S",
     }
 
-    check_metadata(metadata=metadata, regex_checks=regex_checks, list_checks=list_checks, numeric_string_checks=numeric_string_checks, datetime_string_checks=datetime_string_checks)
+    check_metadata(
+        metadata=metadata,
+        regex_checks=regex_checks,
+        list_checks=list_checks,
+        numeric_string_checks=numeric_string_checks,
+        datetime_string_checks=datetime_string_checks,
+    )
 
 
 # def process_cog_old(path):

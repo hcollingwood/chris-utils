@@ -43,9 +43,13 @@ def get_version(root, suffix, output_folder="."):
             return padded_number
 
 
-
-def check_metadata(metadata: dict, regex_checks=None, list_checks=None, numeric_string_checks=None,
-                   datetime_string_checks=None):
+def check_metadata(
+    metadata: dict,
+    regex_checks=None,
+    list_checks=None,
+    numeric_string_checks=None,
+    datetime_string_checks=None,
+):
 
     if datetime_string_checks is None:
         datetime_string_checks = {}
