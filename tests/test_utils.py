@@ -2,7 +2,7 @@ import tempfile
 
 import pytest
 
-from chris_utils.utils import get_list_of_files, get_version, check_metadata
+from chris_utils.utils import check_metadata, get_list_of_files, get_version
 
 
 def test_get_list_of_files(fs):
@@ -37,7 +37,6 @@ def test_get_version():
 
         version = get_version(root, suffix, tmpdir)
         assert version == "0002"
-
 
 
 @pytest.fixture()
@@ -85,15 +84,18 @@ def regex_checks():
         "chris_calculated_image_centre_time": r"[A-z0-9-:\s]+",
     }
 
+
 @pytest.fixture
 def list_checks():
     return {
         "wavelength": float,
     }
 
+
 @pytest.fixture
 def numeric_string_checks():
     return {"chris_lattitude": [-90, 90], "chris_longitude": [-180, 180]}
+
 
 @pytest.fixture
 def datetime_string_checks():
@@ -103,9 +105,17 @@ def datetime_string_checks():
     }
 
 
-def test_check_metadata__success(mock_metadata, regex_checks, list_checks, datetime_string_checks, numeric_string_checks):
+def test_check_metadata__success(
+    mock_metadata, regex_checks, list_checks, datetime_string_checks, numeric_string_checks
+):
 
-    check_metadata(metadata = mock_metadata, regex_checks=regex_checks, list_checks=list_checks, datetime_string_checks=datetime_string_checks, numeric_string_checks=numeric_string_checks)
+    check_metadata(
+        metadata=mock_metadata,
+        regex_checks=regex_checks,
+        list_checks=list_checks,
+        datetime_string_checks=datetime_string_checks,
+        numeric_string_checks=numeric_string_checks,
+    )
 
 
 @pytest.mark.parametrize(
@@ -171,7 +181,7 @@ def test_check_metadata__list_fail(field, value, mock_metadata, list_checks):
 
     mock_metadata[field] = value
     with pytest.raises(Exception) as err:
-        check_metadata(metadata=mock_metadata,list_checks=list_checks)
+        check_metadata(metadata=mock_metadata, list_checks=list_checks)
 
     assert "Invalid metadata identified" in str(err.value)
     assert field in str(err.value)

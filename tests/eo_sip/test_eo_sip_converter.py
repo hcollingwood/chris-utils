@@ -1,10 +1,10 @@
 import pytest
 
 from chris_utils.eo_sip.eo_sip_converter import (
+    do_metadata_check,
     format_latitude,
-    format_longitude, do_metadata_check,
+    format_longitude,
 )
-
 
 
 @pytest.fixture()
@@ -98,9 +98,8 @@ def mock_metadata():
     }
 
 
-
 def test_do_metadata_check__success(mock_metadata):
-    do_metadata_check(metadata = mock_metadata)
+    do_metadata_check(metadata=mock_metadata)
 
 
 @pytest.mark.parametrize(

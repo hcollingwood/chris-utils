@@ -6,9 +6,10 @@ import pytest
 
 from chris_utils.safe.safe_maker import (
     calculate_crc_checksum,
+    do_metadata_check,
     generate_file_name,
     make_safe,
-    write_manifest, do_metadata_check,
+    write_manifest,
 )
 
 
@@ -139,7 +140,6 @@ def test_make_safe__failure_file_type_not_recognised(caplog):
             assert "Schema for nottxt not found" in caplog.text
 
 
-
 def test_do_metadata_check__success(mock_metadata):
 
-    do_metadata_check(metadata = mock_metadata)
+    do_metadata_check(metadata=mock_metadata)
