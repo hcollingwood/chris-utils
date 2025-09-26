@@ -9,9 +9,7 @@ from chris_utils.safe.dat_xml_generator import (
     Element,
 )
 from chris_utils.safe.dat_xml_generator import Schema as DATSchema
-from chris_utils.safe.dat_xml_generator import (
-    Sequence,
-)
+from chris_utils.safe.dat_xml_generator import Sequence
 
 
 def dat_schema():
