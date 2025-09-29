@@ -15,7 +15,7 @@ from chris_utils.safe.metadata_config import (
     set_schema,
     txt_schema,
 )
-from chris_utils.utils import get_version
+from chris_utils.utils import check_metadata, get_version
 
 valid_package_types = [
     "RPI-BAS",
@@ -77,12 +77,14 @@ def generate_file_name(metadata, suffix, output_dir):
     date_key = "ImageDate(yyyymmdd)"
     time_key = "CalculatedImageCentreTime"
 
-    if type(metadata) is dict:
-        if not (date_key in metadata.keys() and time_key in metadata.keys()):
-            raise Exception(f"Required metadata not available. Needs {date_key} " f"and {time_key}")
+    do_metadata_check(metadata)
 
-    else:
-        raise Exception("Metadata not recognised")
+    # if type(metadata) is dict:
+    #     if not (date_key in metadata.keys() and time_key in metadata.keys()):
+    #         raise Exception(f"Required metadata not available. Needs {date_key} " f"and {time_key}")
+    #
+    # else:
+    #     raise Exception("Metadata not recognised")
 
     timestamp = metadata[date_key] + "T" + metadata[time_key]
 
@@ -134,6 +136,22 @@ class HeaderData:
                             break
 
                 setattr(self, var, values)
+
+
+def do_metadata_check(metadata: dict):
+    regex_checks = {
+        "ImageDate(yyyymmdd)": r"[A-z0-9-\s]+",
+        "CalculatedImageCentreTime": r"[A-z0-9-:\s]+",
+    }
+
+    datetime_string_checks = {
+        "ImageDate(yyyymmdd)": "%Y-%m-%d",
+        "CalculatedImageCentreTime": "%H:%M:%S",
+    }
+
+    check_metadata(
+        metadata=metadata, regex_checks=regex_checks, datetime_string_checks=datetime_string_checks
+    )
 
 
 def make_safe(
