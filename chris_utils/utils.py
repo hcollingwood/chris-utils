@@ -65,11 +65,10 @@ def check_metadata(
     for key in regex_checks.keys():
         if not metadata.get(key):
             missing_values.add(key)
-
         try:
             if not re.match(f"^{regex_checks[key]}$", metadata[key]):
                 invalid_values.add(key)
-        except TypeError:
+        except (ValueError, KeyError):
             invalid_values.add(key)
 
     for key in list_checks.keys():
@@ -81,7 +80,7 @@ def check_metadata(
             if not all([type(x) == var_type for x in metadata[key]]):
                 invalid_values.add(key)
 
-        except ValueError:
+        except (ValueError, KeyError):
             invalid_values.add(key)
 
     for key in numeric_string_checks.keys():
@@ -98,7 +97,7 @@ def check_metadata(
             if not min_value <= value <= max_value:
                 invalid_values.add(key)
 
-        except ValueError:
+        except (ValueError, KeyError):
             invalid_values.add(key)
 
     for key in datetime_string_checks.keys():
@@ -107,7 +106,7 @@ def check_metadata(
 
         try:
             datetime.strptime(metadata[key], datetime_string_checks[key])
-        except ValueError:
+        except (ValueError, KeyError):
             invalid_values.add(key)
 
     if missing_values:
