@@ -65,7 +65,6 @@ def check_metadata(
     for key in regex_checks.keys():
         if not metadata.get(key):
             missing_values.add(key)
-            break
 
         try:
             if not re.match(f"^{regex_checks[key]}$", metadata[key]):
@@ -76,7 +75,6 @@ def check_metadata(
     for key in list_checks.keys():
         if not metadata.get(key):
             missing_values.add(key)
-            break
 
         var_type = list_checks[key]
         try:
@@ -89,7 +87,6 @@ def check_metadata(
     for key in numeric_string_checks.keys():
         if not metadata.get(key):
             missing_values.add(key)
-            break
 
         min_value, max_value = numeric_string_checks[key]
         value = metadata[key]
@@ -107,7 +104,6 @@ def check_metadata(
     for key in datetime_string_checks.keys():
         if not metadata.get(key):
             missing_values.add(key)
-            break
 
         try:
             datetime.strptime(metadata[key], datetime_string_checks[key])
