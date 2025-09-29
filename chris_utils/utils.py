@@ -77,7 +77,7 @@ def check_metadata(
 
         var_type = list_checks[key]
         try:
-            if not all([type(x) == var_type for x in metadata[key]]):
+            if not all([isinstance(x, var_type) for x in metadata[key]]):
                 invalid_values.add(key)
 
         except (ValueError, KeyError):
