@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import tempfile
 
 import eopf.common.constants as constants
 import numpy as np
@@ -127,46 +128,47 @@ def _maskify_singleband_tif_inplace(path: str, nodata_value=0, profile_name="def
       - dataset-level nodata = nodata_value
       - INTERNAL dataset mask (0=nodata, 255=data)
     """
-    tmp = path + ".tmp.tif"
+    with tempfile.TemporaryDirectory(prefix="eopf-cog-maskify-") as tmpdir:
+        tmp = os.path.join(tmpdir, "stage.tif")
 
-    with rasterio.open(path) as src:
-        data = src.read(1)
-        prof = src.profile.copy()
-        # write a tiled temp GTiff and set dataset nodata
-        prof.update(tiled=True, blockxsize=512, blockysize=512, nodata=nodata_value)
+        with rasterio.open(path) as src:
+            data = src.read(1)
+            prof = src.profile.copy()
+            # write a tiled temp GTiff and set dataset nodata
+            prof.update(tiled=True, blockxsize=512, blockysize=512, nodata=nodata_value)
 
-        # Build validity mask (treat zeros as nodata; tighten if you need)
-        if np.issubdtype(data.dtype, np.floating):
-            eps = max(1e-6, float(np.finfo(data.dtype).eps) * 10.0)
-            valid = np.abs(data) > eps
-        else:
-            valid = data != nodata_value
+            # Build validity mask (treat zeros as nodata; tighten if you need)
+            if np.issubdtype(data.dtype, np.floating):
+                eps = max(1e-6, float(np.finfo(data.dtype).eps) * 10.0)
+                valid = np.abs(data) > eps
+            else:
+                valid = data != nodata_value
 
-        with Env(GDAL_TIFF_INTERNAL_MASK="YES"):
-            with rasterio.open(tmp, "w", **prof) as dst:
-                dst.write(data, 1)
-                dst.write_mask(valid.astype("uint8") * 255)
-                # preserve tags if present
-                try:
-                    tags = src.tags()
-                    if tags:
-                        dst.update_tags(**tags)
-                except Exception:
-                    pass
+            with Env(GDAL_TIFF_INTERNAL_MASK="YES"):
+                with rasterio.open(tmp, "w", **prof) as dst:
+                    dst.write(data, 1)
+                    dst.write_mask(valid.astype("uint8") * 255)
+                    # preserve tags if present
+                    try:
+                        tags = src.tags()
+                        if tags:
+                            dst.update_tags(**tags)
+                    except Exception:
+                        pass
 
-    # Translate temp to final COG, preserving mask and nodata
-    dst_prof = cog_profiles[profile_name].copy()
-    dst_prof["nodata"] = nodata_value
-    with Env(GDAL_TIFF_INTERNAL_MASK="YES", GDAL_NUM_THREADS="ALL_CPUS"):
-        cog_translate(
-            tmp,
-            path,
-            dst_prof,
-            add_mask=True,
-            nodata=nodata_value,
-            in_memory=False,
-            quiet=True,
-        )
+        # Translate temp to final COG, preserving mask and nodata
+        dst_prof = cog_profiles[profile_name].copy()
+        dst_prof["nodata"] = nodata_value
+        with Env(GDAL_TIFF_INTERNAL_MASK="YES", GDAL_NUM_THREADS="ALL_CPUS"):
+            cog_translate(
+                tmp,
+                path,
+                dst_prof,
+                add_mask=True,
+                nodata=nodata_value,
+                in_memory=False,
+                quiet=True,
+            )
 
     # Clean up temp and any stray sidecars
     try:
