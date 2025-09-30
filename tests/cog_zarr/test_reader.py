@@ -2,6 +2,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import rasterio
+from rio_cogeo.cogeo import cog_translate
+from rio_cogeo.profiles import cog_profiles
 
 from chris_utils.cog_zarr.reader import RCIReader
 
@@ -224,3 +227,26 @@ def test_size_mismatch_raises(tmp_path, write_envi_header, write_rci, make_cube_
 
     with pytest.raises(ValueError, match="File size .* != expected .*"):
         _ = RCIReader(str(rci), str(hdr))
+
+
+def test_cog_has_nodata_zero(tmp_path):
+    # create a tiny temp GTiff -> COG with a 1-pixel zero frame
+    arr = np.ones((3, 10, 12), dtype=np.int32)
+    arr[:, :, 0] = 0  # left border zeros
+
+    tmp = tmp_path / "tmp.tif"
+    cogp = tmp_path / "out.tif"
+
+    with rasterio.open(
+        tmp, "w", driver="GTiff", height=10, width=12, count=3, dtype=str(arr.dtype)
+    ) as dst:
+        for i in range(3):
+            dst.write(arr[i], i + 1)
+
+    prof = cog_profiles["deflate"].copy()
+    prof["nodata"] = 0
+    cog_translate(str(tmp), str(cogp), prof, quiet=True)
+
+    with rasterio.open(cogp) as ds:
+        # nodata present on output bands
+        assert all(nd == 0 for nd in ds.nodatavals)

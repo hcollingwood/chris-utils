@@ -203,6 +203,7 @@ class RCIReader:
                     pass
 
         dst_profile = cog_profiles[profile_name]
+        dst_profile["nodata"] = 0
         cog_translate(
             tmp,
             cog_path,
