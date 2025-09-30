@@ -170,15 +170,6 @@ def _maskify_singleband_tif_inplace(path: str, nodata_value=0, profile_name="def
                 quiet=True,
             )
 
-    # Clean up temp and any stray sidecars
-    try:
-        os.remove(tmp)
-        for side in (tmp + ".msk", path + ".msk"):
-            if os.path.exists(side):
-                os.remove(side)
-    except Exception:
-        pass
-
 
 def _maskify_all_cogs_in_eopf_dir(eopf_cog_dir: str, nodata_value=0):
     """Walk the EOPF .cog directory and maskify every *.tif in-place."""
