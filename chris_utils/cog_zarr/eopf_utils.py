@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import datetime, timedelta
 
 import eopf.common.constants as constants
 from eopf import EOConfiguration
@@ -54,6 +55,32 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     chris_meta = parse_chris_hdr_txt(hdr_txt_path)
     root_attrs = build_eopf_root_attrs(chris_meta, hdr_txt_path)
 
+    # Derive start/end datetime from centre time, mode and number of lines
+    centre_iso = root_attrs.get("datetime")  # ISO centre time
+    # Mode (int): "CHRIS Mode" in txt, else None
+    mode_txt = _norm_keys(chris_meta).get("chris mode")
+    try:
+        _mode_num = int(mode_txt)
+    except (TypeError, ValueError):
+        _mode_num = None
+    # Line integration time (μs): M1=4.2, M2–M5=2.1
+    _lit_us = 4.2 if _mode_num == 1 else 2.1
+    # Number of lines: prefer txt (“No of Ground Lines”), else ENVI "lines"
+    try:
+        _n_lines = int(chris_meta.get("No of Ground Lines") or envi_header.get("lines") or 0)
+    except Exception:
+        _n_lines = 0
+    _start_iso = _end_iso = None
+    if centre_iso and _n_lines > 0:
+        try:
+            _centre_dt = datetime.strptime(centre_iso, "%Y-%m-%dT%H:%M:%SZ")
+            _duration_s = (_n_lines * _lit_us) / 1e6
+            _half = timedelta(seconds=_duration_s / 2.0)
+            _start_iso = (_centre_dt - _half).strftime("%Y-%m-%dT%H:%M:%SZ")
+            _end_iso = (_centre_dt + _half).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            pass
+
     # determine GSD (18 or 36)
     gsd = _gsd_from_mode(chris_meta)
     logging.info(f"CHRIS operating in mode {gsd}")
@@ -98,10 +125,15 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     # minimal STAC discovery
     props = {
         "product:type": root_attrs.get("product_type"),
-        "start_datetime": root_attrs.get("datetime"),
         "platform": root_attrs.get("platform"),
         "instrument": root_attrs.get("instrument"),
     }
+    if _start_iso:
+        props["start_datetime"] = _start_iso
+    if _end_iso:
+        props["end_datetime"] = _end_iso
+    if centre_iso:
+        props["centre_datetime"] = centre_iso
     product.attrs["stac_discovery"] = {"properties": props}
 
     # merge ENVI header + EOPF root attrs
@@ -112,6 +144,38 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     product.attrs["measurement"] = "radiance"
     if units:
         product.attrs["measurement:units"] = units
+
+    # Authoritative band count after any plane drop/selection
+    product.attrs["bands"] = int(da.sizes["band"])
+
+    # NoData semantics for Zarr consumers
+    product.attrs["nodata"] = 0
+
+    # Overwrite wavelength list with post-drop values (removes leading 0.0)
+    if "wavelength" in da.coords:
+        product.attrs["wavelength"] = [float(v) for v in da["wavelength"].values.tolist()]
+
+    # Remove ENVI-only / redundant keys if present (avoid duplication)
+    for k in (
+        "sensor type",
+        "header offset",
+        "byte order",
+        "file type",
+        "data type",
+        "product_type",
+        "platform",
+        "instrument",
+        "datetime",  # kept in stac_discovery
+        "chris_sensor_type",
+        "chris_mask_key_information",
+    ):
+        product.attrs.pop(k, None)
+
+    # Normalize a couple of CHRIS txt keys
+    if "chris_statement_of_data_rights" in product.attrs:
+        product.attrs["data_rights"] = product.attrs.pop("chris_statement_of_data_rights")
+    if "chris_target_name" in product.attrs:
+        product.attrs["target_name"] = product.attrs.pop("chris_target_name")
 
     return product, base
 
