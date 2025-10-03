@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import os
+import tempfile
 import zipfile
 from datetime import datetime
 
@@ -500,38 +501,89 @@ def calculate_angles(metadata):
     return azimuth_deg, elevation_deg
 
 
+class Data:
+    def __init__(self, raw_data, raw_metadata, image, file_data):
+        self.raw_data = raw_data
+        self.raw_metadata = raw_metadata
+        self.image = image
+        self.file_data = file_data
+
+
+def identify_centre_image(all_data: list) -> Data:
+
+    all_positions = []
+    for data in all_data:
+        position = data.raw_metadata.get('chris_image_no_x_of_y', '').split()[0]  # first value before whitespace
+
+        if position == 3:  # centre image identified
+            return data
+
+        all_positions.append((position, data))
+
+    # No centre image identified - choose one near the middle
+    all_positions.sort(key= lambda x: x[0])
+
+    return all_positions[0][1]
+
+
+def zip_directory(folder_dir, name, zip_file: zipfile.ZipFile):
+    for dir, _, files in os.walk(folder_dir):
+        for file in files:
+            file_path = os.path.join(dir, file)
+            archive_name = os.path.join(dir, file).replace(f"{folder_dir}/", f"{name}/")
+            zip_file.write(file_path, arcname=archive_name)
+
+
 def convert_eo_sip(
     inputs: str,
     output: str = ".",
     extras: str = None,
     sat_id: str = "PR1",
     file_class: str = "OPER",
+    debug: bool = False
 ):
 
     if not os.path.exists(output):
         os.makedirs(output)
 
+    all_file_data = []
+
     files = get_list_of_files(inputs.split(","))
-    for file in files:
-        logging.info(f"Processing {file}")
-        if file.lower().endswith(".zarr"):  # try as ZARR
-            raw_data, raw_metadata, image, file_data = process_zarr(file)
-        elif file.lower().endswith(".cog"):  # try as COG
-            raw_data, raw_metadata, image, file_data = process_cog(file)
-        else:
-            raise Exception("File type not recognised")
+    print(files)
+    debug_dir = 'debug'
+    with tempfile.TemporaryDirectory() as tempdir:
+        staging_dir = debug_dir if debug else tempdir
 
-        if extras and os.path.isdir(extras) and extras.endswith(".SAFE"):
-            file_data = process_safe(extras)  # overwrite Zarr/COG file data - not needed for SAFE
+        if not os.path.exists(staging_dir):
+            os.makedirs(staging_dir)
 
-        file_size = get_file_size(file)
+        all_zip_file_name = f"{staging_dir}/{datetime.now()}.zip"
+        with zipfile.ZipFile(all_zip_file_name, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for file in files:
+                logging.info(f"Processing {file}")
+                file_name_short = file.split('/')[-1]
+                if file.lower().endswith(".zarr"):  # try as ZARR
+                    raw_data, raw_metadata, image, file_data = process_zarr(file)
+                elif file.lower().endswith(".cog"):  # try as COG
+                    raw_data, raw_metadata, image, file_data = process_cog(file)
+                else:
+                    raise Exception("File type not recognised")
+
+                if extras and os.path.isdir(extras) and extras.endswith(".SAFE"):
+                    file_data = process_safe(extras)  # overwrite Zarr/COG file data - not needed for SAFE
+
+                all_file_data.append(Data(raw_data=raw_data, raw_metadata=raw_metadata, image=image, file_data=file_data))
+                print(file_name_short)
+                zip_directory(file, file_name_short, zip_file)
+
+        file_size = get_file_size(all_zip_file_name)
+
+        centre_image_data = identify_centre_image(all_file_data)
 
         # TODO: verify that all the required inputs are in the metadata file
-
+        raw_metadata = centre_image_data.raw_metadata
         raw_metadata["chris_latitude"] = raw_metadata["chris_lattitude"]
-
         raw_metadata["file_size"] = file_size
-
         raw_metadata["sat_id"] = sat_id
         raw_metadata["file_class"] = file_class
         raw_metadata["product_type"] = mode_to_product_type[
@@ -556,25 +608,24 @@ def convert_eo_sip(
         version = get_version(file_name_root, ".ZIP", output)
         file_name = f"{file_name_root}_{version}"
 
-        xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)
+        xml_metadata = generate_metadata(file_name, centre_image_data.raw_data, metadata=raw_metadata, image=centre_image_data.image)
         xml_info = generate_info(file_name)
-        png_thumbnail = make_png_thumbnail(image)
-        cog_thumbnail = make_cog_thumbnail(image, raw_metadata)
+        png_thumbnail = make_png_thumbnail(centre_image_data.image)
+        cog_thumbnail = make_cog_thumbnail(centre_image_data.image, raw_metadata)
 
         png_file_name = f"{file_name}.BI.PNG"
         cog_file_name = f"{file_name}.BI.TIF"
         metadata_file_name = f"{file_name}.MD.XML"
         information_file_name = f"{file_name}.SI.XML"
-        zip_file_name = f"{output}/{file_name}.ZIP"
+        zip_file_name = f"{file_name}.ZIP"
 
         logging.info(f"Writing to {zip_file_name}")
-        with zipfile.ZipFile(zip_file_name, "w", zipfile.ZIP_DEFLATED) as zip:
-            zip.writestr(png_file_name, png_thumbnail)
-            zip.writestr(cog_file_name, cog_thumbnail)
-            zip.writestr(metadata_file_name, xml_metadata)
-            zip.writestr(information_file_name, xml_info)
-            for name, data in file_data:
-                zip.writestr(name, data)
+        with zipfile.ZipFile(f"{output}/{file_name}.ZIP", "w", zipfile.ZIP_DEFLATED) as zip_file:
+            zip_file.writestr(png_file_name, png_thumbnail)
+            zip_file.writestr(cog_file_name, cog_thumbnail)
+            zip_file.writestr(metadata_file_name, xml_metadata)
+            zip_file.writestr(information_file_name, xml_info)
+            zip_file.write(all_zip_file_name, arcname=zip_file_name)
 
 
 if __name__ == "__main__":
