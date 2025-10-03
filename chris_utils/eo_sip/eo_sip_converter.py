@@ -513,7 +513,9 @@ def identify_centre_image(all_data: list) -> Data:
 
     all_positions = []
     for data in all_data:
-        position = data.raw_metadata.get('chris_image_no_x_of_y', '').split()[0]  # first value before whitespace
+        position = data.raw_metadata.get("chris_image_no_x_of_y", "").split()[
+            0
+        ]  # first value before whitespace
 
         if position == 3:  # centre image identified
             return data
@@ -521,7 +523,7 @@ def identify_centre_image(all_data: list) -> Data:
         all_positions.append((position, data))
 
     # No centre image identified - choose one near the middle
-    all_positions.sort(key= lambda x: x[0])
+    all_positions.sort(key=lambda x: x[0])
 
     return all_positions[0][1]
 
@@ -540,7 +542,7 @@ def convert_eo_sip(
     extras: str = None,
     sat_id: str = "PR1",
     file_class: str = "OPER",
-    debug: bool = False
+    debug: bool = False,
 ):
 
     if not os.path.exists(output):
@@ -549,8 +551,8 @@ def convert_eo_sip(
     all_file_data = []
 
     files = get_list_of_files(inputs.split(","))
-    print(files)
-    debug_dir = 'debug'
+
+    debug_dir = "debug"
     with tempfile.TemporaryDirectory() as tempdir:
         staging_dir = debug_dir if debug else tempdir
 
@@ -561,7 +563,7 @@ def convert_eo_sip(
         with zipfile.ZipFile(all_zip_file_name, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
                 logging.info(f"Processing {file}")
-                file_name_short = file.split('/')[-1]
+                file_name_short = file.split("/")[-1]
                 if file.lower().endswith(".zarr"):  # try as ZARR
                     raw_data, raw_metadata, image, file_data = process_zarr(file)
                 elif file.lower().endswith(".cog"):  # try as COG
@@ -570,10 +572,19 @@ def convert_eo_sip(
                     raise Exception("File type not recognised")
 
                 if extras and os.path.isdir(extras) and extras.endswith(".SAFE"):
-                    file_data = process_safe(extras)  # overwrite Zarr/COG file data - not needed for SAFE
+                    file_data = process_safe(
+                        extras
+                    )  # overwrite Zarr/COG file data - not needed for SAFE
 
-                all_file_data.append(Data(raw_data=raw_data, raw_metadata=raw_metadata, image=image, file_data=file_data))
-                print(file_name_short)
+                all_file_data.append(
+                    Data(
+                        raw_data=raw_data,
+                        raw_metadata=raw_metadata,
+                        image=image,
+                        file_data=file_data,
+                    )
+                )
+
                 zip_directory(file, file_name_short, zip_file)
 
         file_size = get_file_size(all_zip_file_name)
@@ -608,7 +619,12 @@ def convert_eo_sip(
         version = get_version(file_name_root, ".ZIP", output)
         file_name = f"{file_name_root}_{version}"
 
-        xml_metadata = generate_metadata(file_name, centre_image_data.raw_data, metadata=raw_metadata, image=centre_image_data.image)
+        xml_metadata = generate_metadata(
+            file_name,
+            centre_image_data.raw_data,
+            metadata=raw_metadata,
+            image=centre_image_data.image,
+        )
         xml_info = generate_info(file_name)
         png_thumbnail = make_png_thumbnail(centre_image_data.image)
         cog_thumbnail = make_cog_thumbnail(centre_image_data.image, raw_metadata)

@@ -6,9 +6,12 @@ import zipfile
 import pytest
 
 from chris_utils.eo_sip.eo_sip_converter import (
+    Data,
     do_metadata_check,
     format_latitude,
-    format_longitude, identify_centre_image, Data, zip_directory,
+    format_longitude,
+    identify_centre_image,
+    zip_directory,
 )
 
 
@@ -174,7 +177,7 @@ def test_identify_centre_image__missing_two(mock_metadata):
 
 def test_identify_centre_image__duplicates(mock_metadata):
     all_data = []
-    for i in range(2, 6):
+    for _ in range(2, 6):
         temp_metadata = copy.deepcopy(mock_metadata)
         temp_metadata['chris_image_no_x_of_y'] = '1 of 5'
         all_data.append(Data(raw_metadata=temp_metadata, file_data=None, raw_data=None, image=None))
