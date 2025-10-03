@@ -1,0 +1,10 @@
+name: chris_georef
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - gdal
+  - pyproj
+  - numpy
+  - pip
+  - pip:
+      - -e .
