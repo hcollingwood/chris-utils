@@ -636,7 +636,9 @@ def convert_eo_sip(
         zip_file_name = f"{file_name}.ZIP"
 
         logging.info(f"Writing to {zip_file_name}")
-        with zipfile.ZipFile(f"{output}/{file_name}.SIP.ZIP", "w", zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(
+            f"{output}/{file_name}.SIP.ZIP", "w", zipfile.ZIP_DEFLATED
+        ) as zip_file:
             zip_file.writestr(png_file_name, png_thumbnail)
             zip_file.writestr(cog_file_name, cog_thumbnail)
             zip_file.writestr(metadata_file_name, xml_metadata)
