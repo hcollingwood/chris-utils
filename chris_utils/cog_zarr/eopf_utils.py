@@ -42,7 +42,40 @@ def _radiance_units(envi_header: dict, root_attrs: dict) -> str | None:
     )
 
 
-def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
+# Extract & attach gain table (from the "Gain Setting / Gain Value" block)
+def _extract_gain_table(txt_path: str):
+    rows = []
+    try:
+        with open(txt_path, "r", encoding="utf-8") as f:
+            lines = [ln.rstrip("\n") for ln in f]
+        i = 0
+        while i < len(lines):
+            ln = lines[i].lstrip()
+            if ln.startswith("//") and "Gain Setting" in ln and "Gain Value" in ln:
+                i += 1
+                while i < len(lines):
+                    raw = lines[i].strip()
+                    if not raw or raw.startswith("//"):
+                        break
+                    parts = re.split(r"\s+", raw)
+                    if len(parts) >= 2 and parts[0].isdigit():
+                        try:
+                            rows.append({"setting": int(parts[0]), "value": float(parts[1])})
+                        except Exception:
+                            pass
+                    else:
+                        break
+                    i += 1
+                break
+            i += 1
+    except Exception:
+        return []
+    return rows
+
+
+def _build_eopf_product(
+    da, envi_header, hdr_txt_path, product_name=None, product_format: str | None = None
+):
     """
     Build and return an EOProduct populated with:
       - Groups
@@ -54,6 +87,7 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     # parse CHRIS metadata & EOPF root attrs
     chris_meta = parse_chris_hdr_txt(hdr_txt_path)
     root_attrs = build_eopf_root_attrs(chris_meta, hdr_txt_path)
+    _meta_with_table = parse_chris_hdr_txt(hdr_txt_path, keep_spectral_table=True)
 
     # Derive start/end datetime from centre time, mode and number of lines
     centre_iso = root_attrs.get("datetime")  # ISO centre time
@@ -65,7 +99,7 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
         _mode_num = None
     # Line integration time (μs): M1=4.2, M2–M5=2.1
     _lit_us = 4.2 if _mode_num == 1 else 2.1
-    # Number of lines: prefer txt (“No of Ground Lines”), else ENVI "lines"
+    # Number of lines: prefer txt (No of Ground Lines), else ENVI "lines"
     try:
         _n_lines = int(chris_meta.get("No of Ground Lines") or envi_header.get("lines") or 0)
     except Exception:
@@ -140,6 +174,14 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     product.attrs.update(envi_header)
     product.attrs.update(root_attrs)
 
+    # Attach spectral table (WLLOW/WLHIGH/...)
+    if _meta_with_table.get("spectral_table"):
+        product.attrs["spectral_table"] = _meta_with_table["spectral_table"]
+
+    _gains = _extract_gain_table(hdr_txt_path)
+    if _gains:
+        product.attrs["gain_table"] = _gains
+
     # product-level measurement
     product.attrs["measurement"] = "radiance"
     if units:
@@ -155,6 +197,17 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     if "wavelength" in da.coords:
         product.attrs["wavelength"] = [float(v) for v in da["wavelength"].values.tolist()]
 
+    # Container-aware replacements and cleanup
+    if product_format:
+        # Explicitly declare container type and data layout
+        pf = product_format.upper()
+        product.attrs["file_type"] = "COG" if pf == "COG" else "ZARR"
+        product.attrs["dtype"] = str(da.dtype)
+        try:
+            product.attrs["bit_depth"] = int(getattr(da.dtype, "itemsize", 0) * 8)
+        except Exception:
+            pass
+
     # Remove ENVI-only / redundant keys if present (avoid duplication)
     for k in (
         "sensor type",
@@ -165,9 +218,10 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
         "product_type",
         "platform",
         "instrument",
-        "datetime",  # kept in stac_discovery
+        "datetime",
         "chris_sensor_type",
         "chris_mask_key_information",
+        "chris_no_of_bands_followed_by_band_position_of_smear",
     ):
         product.attrs.pop(k, None)
 
@@ -183,7 +237,9 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
 def write_eopf_zarr(da, envi_header, hdr_txt_path, out_zarr_path):
     """Write an EOPF-compliant Zarr store."""
     product_name = os.path.splitext(os.path.basename(out_zarr_path))[0]
-    product, _ = _build_eopf_product(da, envi_header, hdr_txt_path, product_name)
+    product, _ = _build_eopf_product(
+        da, envi_header, hdr_txt_path, product_name, product_format="ZARR"
+    )
 
     parent, leaf = os.path.split(out_zarr_path)
     os.makedirs(parent or ".", exist_ok=True)
@@ -196,7 +252,9 @@ def write_eopf_cog(da, envi_header, hdr_txt_path, out_cog_dir):
     """Write an EOPF-compliant COG directory (ending in .cog)."""
     # Build the EOProduct and determine the resolution group
     product_name = os.path.splitext(os.path.basename(out_cog_dir))[0]
-    product, base = _build_eopf_product(da, envi_header, hdr_txt_path, product_name)
+    product, base = _build_eopf_product(
+        da, envi_header, hdr_txt_path, product_name, product_format="COG"
+    )
 
     # Ensure the output .cog directory exists
     os.makedirs(out_cog_dir, exist_ok=True)

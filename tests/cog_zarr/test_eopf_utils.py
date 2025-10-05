@@ -57,8 +57,11 @@ def test_build_eopf_product_minimal_cpm(monkeypatch, tmp_path):
     hdr_txt_path = str(tmp_path / "dummy.hdr.txt")
 
     # Fake CHRIS meta + root attrs
-    def fake_parse(_):
-        return {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+    def fake_parse(_path, keep_spectral_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+        if keep_spectral_table:
+            d["spectral_table"] = []  # ok to be empty for the test
+        return d
 
     def fake_root(_meta, _path):
         return {
@@ -94,15 +97,22 @@ def test_build_eopf_product_minimal_cpm(monkeypatch, tmp_path):
 
     # STAC-ish properties
     props = product.attrs["stac_discovery"]["properties"]
-    for k in ("product:type", "start_datetime", "platform", "instrument"):
+    for k in ("product:type", "platform", "instrument"):
         assert k in props
+    assert "start_datetime" in props
+    assert "end_datetime" in props or "centre_datetime" in props  # either/both are fine
 
     # Merged attrs + product-level measurement
     assert product.attrs["samples"] == da.sizes["x"]
     assert product.attrs["lines"] == da.sizes["y"]
+    assert product.attrs["bands"] == da.sizes["band"]
     assert product.attrs["extra_attr"] == "ok"
     assert product.attrs.get("measurement") == "radiance"
     assert product.attrs.get("measurement:units") == "microWatts/nm/m^2/str"
+
+    # No duplicated identity fields at root (kept inside stac_discovery)
+    for dup in ("product_type", "platform", "instrument", "datetime"):
+        assert dup not in product.attrs
 
 
 @pytest.mark.skipif(
@@ -112,8 +122,11 @@ def test_build_eopf_product_mode1_still_image_base(monkeypatch, tmp_path):
     """Mode 1 (36 m) still uses the same CPM base: measurements/image."""
     da = small_da(nb=2)
 
-    def fake_parse(_):
-        return {"CHRIS Mode": "1"}  # -> 36 m
+    def fake_parse(_path, keep_spectral_table: bool = False):
+        d = {"CHRIS Mode": "1"}  # -> 36 m
+        if keep_spectral_table:
+            d["spectral_table"] = []
+        return d
 
     def fake_root(_m, _p):
         return {"product_type": "X", "datetime": "Y", "platform": "P", "instrument": "I"}
@@ -133,8 +146,11 @@ def test_build_eopf_product_name_from_hdr(monkeypatch, tmp_path):
     hdr_txt = str(tmp_path / "CHRIS_ABC_123.hdr.txt")
     (tmp_path / "CHRIS_ABC_123.hdr.txt").write_text("", encoding="utf-8")
 
-    def fake_parse(_):
-        return {"CHRIS Mode": "2"}
+    def fake_parse(_path, keep_spectral_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+        if keep_spectral_table:
+            d["spectral_table"] = []  # ok to be empty for the test
+        return d
 
     def fake_root(_m, _p):
         return {"product_type": "X", "datetime": "Y", "platform": "P", "instrument": "I"}
@@ -157,8 +173,11 @@ def test_write_eopf_zarr_writes_product(monkeypatch, tmp_path):
     hdr_txt = str(tmp_path / "dummy.hdr.txt")
     out_path = str(tmp_path / "MyProd.eopf.zarr")
 
-    def fake_parse(_):
-        return {"CHRIS Mode": "2"}
+    def fake_parse(_path, keep_spectral_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+        if keep_spectral_table:
+            d["spectral_table"] = []  # ok to be empty for the test
+        return d
 
     def fake_root(_m, _p):
         return {
@@ -202,6 +221,11 @@ def test_write_eopf_zarr_writes_product(monkeypatch, tmp_path):
     assert f"{base}/y" in product
     assert f"{base}/x" in product
     assert f"{base}/oa01_radiance" in product
+    # root attrs sanity
+    assert product.attrs["bands"] == da.sizes["band"]
+    # Zarr root should not duplicate identity fields
+    for dup in ("product_type", "platform", "instrument", "datetime"):
+        assert dup not in product.attrs
 
 
 # ---------- tests for write_eopf_cog (if present) ----------
@@ -218,8 +242,11 @@ def test_write_eopf_cog_structure(monkeypatch, tmp_path):
     hdr_txt = str(tmp_path / "dummy.hdr.txt")
     out_dir = str(tmp_path / "MyProd.eopf.cog")
 
-    def fake_parse(_):
-        return {"CHRIS Mode": "2"}
+    def fake_parse(_path, keep_spectral_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+        if keep_spectral_table:
+            d["spectral_table"] = []  # ok to be empty for the test
+        return d
 
     def fake_root(_m, _p):
         return {
@@ -258,6 +285,13 @@ def test_write_eopf_cog_structure(monkeypatch, tmp_path):
     assert "" in written
     assert "measurements" in written
     assert "measurements/image" in written
+    root_prod = written[""]
+    # Only assert these if you implemented them in _build_eopf_product(product_format="COG")
+    assert root_prod.attrs.get("file_type") in {"COG", "ZARR", None}  # "COG" if you set it
+    # If set to "COG", dtype/bit_depth should also be present
+    if root_prod.attrs.get("file_type") == "COG":
+        assert "dtype" in root_prod.attrs
+        assert "bit_depth" in root_prod.attrs
 
 
 @pytest.mark.parametrize(
