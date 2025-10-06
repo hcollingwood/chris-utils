@@ -129,3 +129,38 @@ def build_eopf_root_attrs(chris_meta: dict, hdr_filename: str) -> dict:
             continue
         attrs[f"chris_{clean}"] = v
     return attrs
+
+
+def extract_gain_table(txt_path: str):
+    """
+    Parse the 'Gain Setting / Gain Value' block from a CHRIS .hdr.txt file.
+
+    Returns a list of {"setting": int, "value": float}.
+    """
+    rows = []
+    try:
+        with open(txt_path, "r", encoding="utf-8") as f:
+            lines = [ln.rstrip("\n") for ln in f]
+
+        for i, comment_line in enumerate(lines):
+            line = comment_line.lstrip()
+            if line.startswith("//") and "Gain Setting" in line and "Gain Value" in line:
+                # Consume subsequent data lines until a blank or comment
+                for data_line in lines[i + 1 :]:
+                    raw = data_line.strip()
+                    if not raw or raw.startswith("//"):
+                        break
+                    parts = re.split(r"\s+", raw)
+                    if len(parts) >= 2 and parts[0].isdigit():
+                        try:
+                            rows.append({"setting": int(parts[0]), "value": float(parts[1])})
+                        except Exception:
+                            # skip malformed lines but continue parsing the block
+                            pass
+                    else:
+                        # first non-table line ends the block
+                        break
+                break
+    except Exception:
+        return []
+    return rows

@@ -9,7 +9,7 @@ from eopf.product import EOGroup, EOProduct, EOVariable
 from eopf.store.cog import EOCogStore
 from eopf.store.zarr import EOZarrStore
 
-from .hdr_parser import build_eopf_root_attrs, parse_chris_hdr_txt
+from .hdr_parser import build_eopf_root_attrs, extract_gain_table, parse_chris_hdr_txt
 
 EOConfiguration().logging__level = "DEBUG"
 EOConfiguration().logging__dask_level = "DEBUG"
@@ -42,37 +42,6 @@ def _radiance_units(envi_header: dict, root_attrs: dict) -> str | None:
     )
 
 
-# Extract & attach gain table (from the "Gain Setting / Gain Value" block)
-def _extract_gain_table(txt_path: str):
-    rows = []
-    try:
-        with open(txt_path, "r", encoding="utf-8") as f:
-            lines = [ln.rstrip("\n") for ln in f]
-        i = 0
-        while i < len(lines):
-            ln = lines[i].lstrip()
-            if ln.startswith("//") and "Gain Setting" in ln and "Gain Value" in ln:
-                i += 1
-                while i < len(lines):
-                    raw = lines[i].strip()
-                    if not raw or raw.startswith("//"):
-                        break
-                    parts = re.split(r"\s+", raw)
-                    if len(parts) >= 2 and parts[0].isdigit():
-                        try:
-                            rows.append({"setting": int(parts[0]), "value": float(parts[1])})
-                        except Exception:
-                            pass
-                    else:
-                        break
-                    i += 1
-                break
-            i += 1
-    except Exception:
-        return []
-    return rows
-
-
 def _build_eopf_product(
     da, envi_header, hdr_txt_path, product_name=None, product_format: str | None = None
 ):
@@ -99,7 +68,7 @@ def _build_eopf_product(
         _mode_num = None
     # Line integration time (μs): M1=4.2, M2–M5=2.1
     _lit_us = 4.2 if _mode_num == 1 else 2.1
-    # Number of lines: prefer txt (No of Ground Lines), else ENVI "lines"
+    # Number of lines: prefer txt (“No of Ground Lines”), else ENVI "lines"
     try:
         _n_lines = int(chris_meta.get("No of Ground Lines") or envi_header.get("lines") or 0)
     except Exception:
@@ -114,7 +83,6 @@ def _build_eopf_product(
             _end_iso = (_centre_dt + _half).strftime("%Y-%m-%dT%H:%M:%SZ")
         except Exception:
             pass
-
     # determine GSD (18 or 36)
     gsd = _gsd_from_mode(chris_meta)
     logging.info(f"CHRIS operating in mode {gsd}")
@@ -175,12 +143,11 @@ def _build_eopf_product(
     product.attrs.update(root_attrs)
 
     # Attach spectral table (WLLOW/WLHIGH/...)
-    if _meta_with_table.get("spectral_table"):
-        product.attrs["spectral_table"] = _meta_with_table["spectral_table"]
+    if table := _meta_with_table.get("spectral_table"):
+        product.attrs["spectral_table"] = table
 
-    _gains = _extract_gain_table(hdr_txt_path)
-    if _gains:
-        product.attrs["gain_table"] = _gains
+    if gains := extract_gain_table(hdr_txt_path):
+        product.attrs["gain_table"] = gains
 
     # product-level measurement
     product.attrs["measurement"] = "radiance"
@@ -190,7 +157,7 @@ def _build_eopf_product(
     # Authoritative band count after any plane drop/selection
     product.attrs["bands"] = int(da.sizes["band"])
 
-    # NoData semantics for Zarr consumers
+    # Lightweight NoData semantics for Zarr consumers
     product.attrs["nodata"] = 0
 
     # Overwrite wavelength list with post-drop values (removes leading 0.0)
@@ -215,13 +182,13 @@ def _build_eopf_product(
         "byte order",
         "file type",
         "data type",
+        "chris_no_of_bands_followed_by_band_position_of_smear",
         "product_type",
         "platform",
         "instrument",
-        "datetime",
+        "datetime",  # kept in stac_discovery
         "chris_sensor_type",
         "chris_mask_key_information",
-        "chris_no_of_bands_followed_by_band_position_of_smear",
     ):
         product.attrs.pop(k, None)
 
