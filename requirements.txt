@@ -183,6 +183,7 @@ h5py==3.13.0
     # via
     #   eopf
     #   h5netcdf
+    #   pvlib
 httpcore==1.0.9
     # via httpx
 httptools==0.6.4
@@ -265,6 +266,7 @@ numpy==2.3.3
     #   numcodecs
     #   pandas
     #   pims
+    #   pvlib
     #   pyogrio
     #   rasterio
     #   rioxarray
@@ -302,6 +304,7 @@ pandas==2.3.2
     #   dask-expr
     #   dask-image
     #   geopandas
+    #   pvlib
     #   sentineltoolbox
     #   xarray
 partd==1.4.2
@@ -322,6 +325,8 @@ propcache==0.3.2
     #   yarl
 psutil==7.1.0
     # via distributed
+pvlib==0.13.1
+    # via chris-utils (pyproject.toml)
 pyarrow==21.0.0
     # via dask-expr
 pycparser==2.23
@@ -362,6 +367,7 @@ pytz==2024.1
     # via
     #   eopf
     #   pandas
+    #   pvlib
 pyyaml==6.0.2
     # via
     #   dask
@@ -383,6 +389,7 @@ requests==2.32.2
     # via
     #   eopf
     #   pooch
+    #   pvlib
 rio-cogeo==5.4.1
     # via
     #   chris-utils (pyproject.toml)
@@ -406,6 +413,7 @@ scikit-learn==1.7.2
 scipy==1.16.2
     # via
     #   dask-image
+    #   pvlib
     #   scikit-learn
     #   sentineltoolbox
     #   xarray
