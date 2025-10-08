@@ -37,7 +37,7 @@ def test_write_manifest():
     with tempfile.TemporaryDirectory() as tempdir:
         write_manifest(test_string, tempdir)
 
-        with open(tempdir + "/MANIFEST.XML") as f:
+        with open(tempdir + "/manifest.safe") as f:
             lines = f.readlines()
             assert lines == [test_string]
 
@@ -82,7 +82,7 @@ def test_generate_file_name__success(mock_metadata):
 
 def test_make_safe__success():
     input_file_name = "myfile.txt"  # only important part here is the .txt extension
-    expected_file_name = "CHRIS_20040411T181816_0001_RPI-BAS_64F3.SAFE"
+    expected_file_name = "CHRIS_20040411T181816_0001_RPI-BAS_82A3.SAFE"
     with tempfile.TemporaryDirectory() as tempdir:
         with open(tempdir + "/" + input_file_name, "w") as f:
             f.write(
@@ -102,7 +102,7 @@ def test_make_safe__success():
         assert len(os.listdir(safe_path)) == 3  # original file and SAFE package
         assert os.path.isdir(metadata_path)
         assert os.path.isdir(measurement_path)
-        assert os.path.isfile(f"{safe_path}/MANIFEST.XML")
+        assert os.path.isfile(f"{safe_path}/manifest.safe")
 
         metadata_contents = os.listdir(metadata_path)
         assert "txt.xsd" in metadata_contents
@@ -133,8 +133,8 @@ def test_make_safe__failure_file_type_not_recognised(caplog):
 
             all_files = os.listdir(tempdir)
             assert len(all_files) == 2  # original file and SAFE package
-
-            safe_path = f"{tempdir}/CHRIS_20040411T181816_0001_RPI-BAS_7492.SAFE"
+            print(os.listdir(tempdir))
+            safe_path = f"{tempdir}/CHRIS_20040411T181816_0001_RPI-BAS_F6AD.SAFE"
             assert len(os.listdir(safe_path)) == 2  # manifest and measurement folder
 
             assert "Schema for nottxt not found" in caplog.text

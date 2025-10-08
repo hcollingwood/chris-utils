@@ -68,8 +68,8 @@ def make_manifest(paths: list = None) -> str:
 
 
 def write_manifest(metadata: str, path: str) -> None:
-    """Writes metadata to manifest.xml in a given directory"""
-    with open(f"{path}/MANIFEST.XML", "w") as f:
+    """Writes metadata to manifest.safe in a given directory"""
+    with open(f"{path}/manifest.safe", "w") as f:
         f.write(metadata)
 
 
