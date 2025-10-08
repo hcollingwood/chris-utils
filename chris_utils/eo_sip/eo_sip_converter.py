@@ -220,7 +220,7 @@ def process_zarr(path):
 
     r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
-    measurement_groups = [g for g in contents.groups if g.startswith('/measurements')]
+    measurement_groups = [g for g in contents.groups if g.startswith("/measurements")]
     longest_group = max(measurement_groups)
 
     d = contents.to_dict()
