@@ -112,7 +112,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
         data_object_list = []
         if data_objects:
             for data_object in data_objects:
-                split_path = data_object.rsplit("/", 2)
+                split_path = data_object.split("/", 4)
                 logging.info("/".join(split_path[1:]))
                 data_type = split_path[-2]
                 file_name = split_path[-1]
