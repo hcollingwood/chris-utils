@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import tempfile
+import zipfile
 
 import pandas as pd
 
@@ -12,8 +13,10 @@ from chris_utils.safe.manifest_xml_generator import XFDU
 from chris_utils.safe.metadata_config import (
     dat_schema,
     hdr_schema,
+    jpg_schema,
     set_schema,
     txt_schema,
+    zip_schema,
 )
 from chris_utils.utils import get_version
 
@@ -29,8 +32,10 @@ valid_package_types = [
 xml_schemas = {
     "dat": dat_schema(),
     "hdr": hdr_schema(),
+    "jpg": jpg_schema(),
     "set": set_schema(),
     "txt": txt_schema(),
+    "zip": zip_schema(),
 }
 
 
@@ -136,6 +141,18 @@ class HeaderData:
                 setattr(self, var, values)
 
 
+def clean_metadata(metadata):
+    cleaned_metadata = {}
+    for key in metadata:
+        if isinstance(metadata[key], str):
+            if not metadata[key].startswith('$'):
+                cleaned_metadata[key] = metadata[key]
+        else:
+            cleaned_metadata[key] = metadata[key]
+
+    return cleaned_metadata
+
+
 def make_safe(
     inputs: str,
     output: str = ".",
@@ -147,6 +164,7 @@ def make_safe(
         os.makedirs(output)
 
     file_types = set()
+    zipped_file_types = set()
     all_paths = []
 
     processing_message = "Processing %s"
@@ -185,18 +203,43 @@ def make_safe(
             metadata = {}
             for path in paths:
                 file_type = os.path.splitext(path)[1][1:].lower()
-                output_dat_path = f"{measurement_dir}/MEASUREMENT-{file_type}.dat"
+                file_name = path.replace(file, '')
+                if not file_name.startswith('/'):
+                    file_name = file_name + '/'
+
+                output_dat_path = f"{measurement_dir}{file_name}"
+                output_dat_folder_path = output_dat_path.rsplit('/', 1)[0]
+                os.makedirs(output_dat_folder_path, exist_ok=True)
                 shutil.copy(path, output_dat_path)
                 file_types.add(file_type)
+
+                if file_type == 'zip':
+                    zip = zipfile.ZipFile(path)
+                    zip.extractall(path=f'/tmp/{os.path.splitext(path)[0]}')
+
+                    for (dirpath, dirnames, filenames) in os.walk(f'/tmp/{os.path.splitext(path)[0]}'):
+                        for filename in filenames:
+                            file_type = os.path.splitext(filename)[1][1:].lower()
+                            zipped_file_types.add(file_type)
+
+                            try:
+                                new_metadata = HeaderData(f"{dirpath}/{filename}").__dict__
+                                cleaned_metadata = clean_metadata(new_metadata)
+                                metadata = metadata | cleaned_metadata
+                            except UnicodeDecodeError:
+                                pass
+
                 all_paths.append(output_dat_path)
 
                 try:
-                    metadata = metadata | HeaderData(path).__dict__
-
+                    new_metadata = HeaderData(path).__dict__
+                    cleaned_metadata = clean_metadata(new_metadata)
+                    metadata = metadata | cleaned_metadata
                 except UnicodeDecodeError:
                     pass
 
-            for file_type in file_types:
+            all_file_types = file_types.union(zipped_file_types)
+            for file_type in all_file_types:
                 try:
                     xml = (
                         xml_schemas[file_type]
