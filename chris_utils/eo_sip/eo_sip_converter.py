@@ -521,7 +521,7 @@ def calculate_angles(metadata):
 
     formatted_datetime = timestamp.strftime("%d/%m/%y %H:%M:%S")
 
-    time = pd.date_range(formatted_datetime, freq="h", periods=1, tz="Etc/GMT")
+    time = pd.date_range(formatted_datetime, freq="h", periods=1, tz="Etc/UTC")
     solar_position = solarposition.get_solarposition(time, latitude, longitude)
 
     return solar_position.azimuth.iloc[0], solar_position.elevation.iloc[0]
