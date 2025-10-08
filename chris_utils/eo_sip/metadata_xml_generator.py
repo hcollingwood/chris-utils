@@ -120,7 +120,7 @@ class Footprint(BaseXmlModel, ns="eop", nsmap=namespaces, tag="Footprint"):
 
 class IlluminationAngle(BaseXmlModel, nsmap=namespaces, ns="eop"):
     uom: str = attr(ns=None)
-    value: float = element
+    value: str = element
 
 
 class WrsGrid(BaseXmlModel, nsmap=namespaces, ns="eop"):
@@ -326,10 +326,10 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
                             value=wrs_latitude_grid,
                         ),
                         illumination_azimuth_angle=IlluminationAngle(
-                            uom=uom_deg, value=illumination_azimuth_angle
+                            uom=uom_deg, value="{:0.7f}".format(illumination_azimuth_angle)
                         ),
                         illumination_elevation_angle=IlluminationAngle(
-                            uom=uom_deg, value=illumination_elevation_angle
+                            uom=uom_deg, value="{:0.7f}".format(illumination_elevation_angle)
                         ),
                     )
                 ),

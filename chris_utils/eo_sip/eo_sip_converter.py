@@ -1,5 +1,4 @@
 import argparse
-import calendar
 import io
 import json
 import logging
@@ -14,6 +13,7 @@ import pandas as pd
 import rasterio
 import xarray as xr
 from PIL import Image, TiffImagePlugin
+from pvlib import solarposition
 
 from chris_utils.eo_sip.information_xml_generator import SIPInfo
 from chris_utils.eo_sip.metadata_xml_generator import EarthObservation
@@ -444,65 +444,91 @@ def get_file_size(path):
     return total_size
 
 
+# def calculate_angles_old(metadata):
+#     # illumination_azimuth_angle = "46.11*"  # astropy
+#     # illumination_elevation_angle = "61.47*"  # solar zenith angle
+#
+#     """
+#     Equations from here:
+#     https://www.pveducation.org/pvcdrom/properties-of-sunlight/declination-angle
+#     https://www.pveducation.org/pvcdrom/properties-of-sunlight/azimuth-angle
+#     https://www.pveducation.org/pvcdrom/properties-of-sunlight/elevation-angle
+#     https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+#     """
+#
+#     timestamp = metadata["timestamp"]
+#     latitude = float(metadata["chris_latitude"])
+#     longitude = float(metadata["chris_longitude"])
+#
+#     day_of_year = int(timestamp.strftime("%j"))
+#     days_in_year = 366 if calendar.isleap(timestamp.year) else 365
+#     fraction_of_year = (2 * math.pi / days_in_year) * (day_of_year - 1 + (timestamp.hour - 12) / 24)
+#
+#     equation_of_time = 229.18 * (
+#         0.000075
+#         + 0.001868 * math.cos(fraction_of_year)
+#         - 0.032077 * math.sin(fraction_of_year)
+#         - 0.014615 * math.cos(2 * fraction_of_year)
+#         - 0.040849 * math.sin(2 * fraction_of_year)
+#     )
+#
+#     declination_rad = (
+#         0.006918
+#         - 0.399912 * math.cos(fraction_of_year)
+#         + 0.070257 * math.sin(fraction_of_year)
+#         - 0.006758 * math.cos(2 * fraction_of_year)
+#         + 0.000907 * math.sin(2 * fraction_of_year)
+#         - 0.002697 * math.cos(3 * fraction_of_year)
+#         + 0.00148 * math.sin(3 * fraction_of_year)
+#     )
+#     declination_deg = math.degrees(declination_rad)
+#
+#     time_offset = equation_of_time + 4 * longitude
+#
+#     true_solar_time = timestamp.hour * 60 + timestamp.minute + timestamp.second / 60 + time_offset
+#
+#     solar_hour_angle = true_solar_time / 4 - 180
+#
+#     zenith_deg = acos_deg(
+#         sin_deg(latitude) * sin_deg(declination_deg)
+#         + cos_deg(latitude) * cos_deg(declination_deg) * cos_deg(solar_hour_angle)
+#     )
+#     # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - \
+#     #              cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
+#     azimuth_deg = 180 - acos_deg(
+#         -(sin_deg(latitude) * cos_deg(zenith_deg) - sin_deg(declination_deg))
+#         / (cos_deg(latitude) * sin_deg(zenith_deg))
+#     )
+#
+#     elevation_deg = 90 + latitude - declination_deg
+#
+#     return azimuth_deg, elevation_deg
+
+
+def remove_leading_zeroes(number_as_string):
+    number_as_string = number_as_string.strip()
+    is_negative = number_as_string.startswith("-")
+    number_as_string = number_as_string.strip("-")
+
+    cleaned_value = re.sub(r"^0+", "", number_as_string)
+    tag = "-" if is_negative else ""
+    cleaned_value = tag + cleaned_value
+
+    return float(cleaned_value)
+
+
 def calculate_angles(metadata):
-    # illumination_azimuth_angle = "46.11*"  # astropy
-    # illumination_elevation_angle = "61.47*"  # solar zenith angle
-
-    """
-    Equations from here:
-    https://www.pveducation.org/pvcdrom/properties-of-sunlight/declination-angle
-    https://www.pveducation.org/pvcdrom/properties-of-sunlight/azimuth-angle
-    https://www.pveducation.org/pvcdrom/properties-of-sunlight/elevation-angle
-    https://gml.noaa.gov/grad/solcalc/solareqns.PDF
-    """
-
     timestamp = metadata["timestamp"]
-    latitude = float(metadata["chris_latitude"])
-    longitude = float(metadata["chris_longitude"])
 
-    day_of_year = int(timestamp.strftime("%j"))
-    days_in_year = 366 if calendar.isleap(timestamp.year) else 365
-    fraction_of_year = (2 * math.pi / days_in_year) * (day_of_year - 1 + (timestamp.hour - 12) / 24)
+    latitude = remove_leading_zeroes(metadata["chris_latitude"])
+    longitude = remove_leading_zeroes(metadata["chris_longitude"])
 
-    equation_of_time = 229.18 * (
-        0.000075
-        + 0.001868 * math.cos(fraction_of_year)
-        - 0.032077 * math.sin(fraction_of_year)
-        - 0.014615 * math.cos(2 * fraction_of_year)
-        - 0.040849 * math.sin(2 * fraction_of_year)
-    )
+    formatted_datetime = timestamp.strftime("%d/%m/%y %H:%M:%S")
 
-    declination_rad = (
-        0.006918
-        - 0.399912 * math.cos(fraction_of_year)
-        + 0.070257 * math.sin(fraction_of_year)
-        - 0.006758 * math.cos(2 * fraction_of_year)
-        + 0.000907 * math.sin(2 * fraction_of_year)
-        - 0.002697 * math.cos(3 * fraction_of_year)
-        + 0.00148 * math.sin(3 * fraction_of_year)
-    )
-    declination_deg = math.degrees(declination_rad)
+    time = pd.date_range(formatted_datetime, freq="h", periods=1, tz="Etc/UTC")
+    solar_position = solarposition.get_solarposition(time, latitude, longitude)
 
-    time_offset = equation_of_time + 4 * longitude
-
-    true_solar_time = timestamp.hour * 60 + timestamp.minute + timestamp.second / 60 + time_offset
-
-    solar_hour_angle = true_solar_time / 4 - 180
-
-    zenith_deg = acos_deg(
-        sin_deg(latitude) * sin_deg(declination_deg)
-        + cos_deg(latitude) * cos_deg(declination_deg) * cos_deg(solar_hour_angle)
-    )
-    # azimuth_rad = math.acos ((math.sin(dec_rad)*cos(lat_rad) - \
-    #              cos(dec)*sin(lat_rad)*cos(solar_hour_angle))/cos(elevation_rad))
-    azimuth_deg = 180 - acos_deg(
-        -(sin_deg(latitude) * cos_deg(zenith_deg) - sin_deg(declination_deg))
-        / (cos_deg(latitude) * sin_deg(zenith_deg))
-    )
-
-    elevation_deg = 90 + latitude - declination_deg
-
-    return azimuth_deg, elevation_deg
+    return solar_position.azimuth.iloc[0], solar_position.elevation.iloc[0]
 
 
 def convert_eo_sip(
