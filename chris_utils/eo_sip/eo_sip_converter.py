@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import os
+import re
 import zipfile
 from datetime import datetime
 
@@ -219,12 +220,16 @@ def process_zarr(path):
 
     r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
 
-    longest_group = max(contents.groups)
+    measurement_groups = [g for g in contents.groups if g.startswith("/measurements")]
+    longest_group = max(measurement_groups)
 
     d = contents.to_dict()
 
     df = pd.DataFrame()
-    for band in list(d[longest_group].data_vars):
+    all_entries = list(d[longest_group].data_vars)
+    bands = [b for b in all_entries if re.match("^.+[0-9]+.+$", b)]
+
+    for band in bands:
         df[band] = d[longest_group].data_vars[band].to_dataframe()
     df = df.reset_index()
 
