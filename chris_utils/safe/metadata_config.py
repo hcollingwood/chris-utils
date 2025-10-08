@@ -173,7 +173,7 @@ def txt_schema():
             type="txtType",
             annotation=Annotation(
                 documentation=Documentation(
-                    lang="en", value="The file contains metadata in plain " "text format."
+                    lang="en", value="The file contains metadata in plain text format."
                 ),
                 app_info=AppInfo(
                     block=Block(
@@ -202,6 +202,90 @@ def txt_schema():
     element = Element(
         name="txt",
         type="txtType",
+        annotation=Annotation(documentation=documentation),
+    )
+    xml = DATSchema(
+        element=element,
+        complex_type=complex_type,
+    )
+
+    return xml
+
+
+def jpg_schema():
+    complex_elements = [
+        Element(
+            name="jpg",
+            type="jpgType",
+            annotation=Annotation(
+                documentation=Documentation(
+                    lang="en", value="The file contains an image thumbnail."
+                ),
+                app_info=AppInfo(
+                    block=Block(
+                        encoding=BlockEncoding(value="BINARY"),
+                    )
+                ),
+            ),
+        )
+    ]
+
+    complex_type = [
+        ComplexType(
+            name="txtType",
+            sequence=Sequence(elements=complex_elements),
+        ),
+    ]
+
+    documentation = Documentation(
+        lang="en",
+        value="A thumbnail of an image produced by CHRIS PROBA-1",
+    )
+    element = Element(
+        name="jpg",
+        type="jpgType",
+        annotation=Annotation(documentation=documentation),
+    )
+    xml = DATSchema(
+        element=element,
+        complex_type=complex_type,
+    )
+
+    return xml
+
+
+def zip_schema():
+    complex_elements = [
+        Element(
+            name="zip",
+            type="zipType",
+            annotation=Annotation(
+                documentation=Documentation(
+                    lang="en", value="The file contains the following: ."
+                ),
+                app_info=AppInfo(
+                    block=Block(
+                        encoding=BlockEncoding(value="BINARY"),
+                    )
+                ),
+            ),
+        )
+    ]
+
+    complex_type = [
+        ComplexType(
+            name="txtType",
+            sequence=Sequence(elements=complex_elements),
+        ),
+    ]
+
+    documentation = Documentation(
+        lang="en",
+        value="A thumbnail of an image produced by CHRIS PROBA-1",
+    )
+    element = Element(
+        name="jpg",
+        type="jpgType",
         annotation=Annotation(documentation=documentation),
     )
     xml = DATSchema(
