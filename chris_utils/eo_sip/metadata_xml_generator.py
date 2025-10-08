@@ -326,10 +326,10 @@ class EarthObservation(BaseXmlModel, nsmap=namespaces, ns="opt"):
                             value=wrs_latitude_grid,
                         ),
                         illumination_azimuth_angle=IlluminationAngle(
-                            uom=uom_deg, value="{:0.2f}".format(illumination_azimuth_angle)
+                            uom=uom_deg, value="{:0.7f}".format(illumination_azimuth_angle)
                         ),
                         illumination_elevation_angle=IlluminationAngle(
-                            uom=uom_deg, value="{:0.2f}".format(illumination_elevation_angle)
+                            uom=uom_deg, value="{:0.7f}".format(illumination_elevation_angle)
                         ),
                     )
                 ),
