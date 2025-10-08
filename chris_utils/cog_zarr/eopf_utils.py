@@ -3,11 +3,13 @@ import os
 import re
 
 import eopf.common.constants as constants
+import numpy as np
 from eopf import EOConfiguration
 from eopf.product import EOGroup, EOProduct, EOVariable
 from eopf.store.cog import EOCogStore
 from eopf.store.zarr import EOZarrStore
 
+from .geo import geo_grid_mapping_attrs
 from .hdr_parser import build_eopf_root_attrs, parse_chris_hdr_txt
 
 EOConfiguration().logging__level = "DEBUG"
@@ -75,6 +77,38 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     product[f"{base}/y"] = EOVariable(data=da["y"].values, dims=("y",))
     product[f"{base}/x"] = EOVariable(data=da["x"].values, dims=("x",))
 
+    epsg = None
+    epsg_str = da.attrs.get("spatial_ref")  # e.g. "EPSG:32612"
+    if isinstance(epsg_str, str) and epsg_str.upper().startswith("EPSG:"):
+        try:
+            epsg = int(epsg_str.split(":")[1])
+            product[f"{base}/crs"] = EOVariable(data=np.array(0, dtype="uint8"), dims=())
+            product[f"{base}/crs"].attrs.update(geo_grid_mapping_attrs(epsg))
+        except Exception:
+            epsg = None
+
+    geom_vals = {
+        "sza": _norm_keys(chris_meta).get("solar zenith angle"),
+        "oza": _norm_keys(chris_meta).get("observation zenith angle"),
+        "oaa": _norm_keys(chris_meta).get("observation azimuth angle"),
+        "saa": _norm_keys(chris_meta).get("solar azimuth angle"),
+    }
+    if any(v is not None for v in geom_vals.values()):
+        product["conditions"] = EOGroup()
+        product["conditions/geometry"] = EOGroup()
+        H, W = int(da.sizes["y"]), int(da.sizes["x"])
+        for name, val in geom_vals.items():
+            if val is None:
+                continue
+            try:
+                arr = np.full((H, W), float(val), dtype="float32")
+            except Exception:
+                continue
+            gvar = EOVariable(data=arr, dims=("y", "x"))
+            if epsg:
+                gvar.attrs["grid_mapping"] = "crs"
+            product[f"conditions/geometry/{name}"] = gvar
+
     # pick up units if present (e.g. "microWatts/nm/m^2/str") and wavelength
     units = _radiance_units(envi_header, root_attrs)
     has_wl = "wavelength" in da.coords
@@ -93,6 +127,9 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
                 var.attrs["wavelength_nm"] = float(da["wavelength"].sel(band=bi))
             except Exception:
                 pass
+        if epsg:
+            var.attrs["grid_mapping"] = "crs"
+
         product[f"{base}/{vname}"] = var
 
     # minimal STAC discovery
@@ -147,3 +184,9 @@ def write_eopf_cog(da, envi_header, hdr_txt_path, out_cog_dir):
 
         # 3) radiance subgroup folder + its attrs
         store[base] = product[base]
+
+        # 4) condition group + attrs + geometry subgroup + attrs + vars
+        if "conditions" in product:
+            store["conditions"] = product["conditions"]
+            if "geometry" in product["conditions"]:
+                store["conditions/geometry"] = product["conditions/geometry"]

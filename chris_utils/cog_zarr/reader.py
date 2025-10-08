@@ -1,12 +1,21 @@
+import csv
 import json
 import os
 
 import numpy as np
+import pyproj
 import rasterio
 import xarray as xr
 from rio_cogeo.cogeo import cog_translate
 from rio_cogeo.profiles import cog_profiles
 
+from .geo import (
+    geo_affine_from_center,
+    geo_build_xy_coords,
+    geo_extract_center_lat_lon_gsd,
+    geo_utm_epsg_from_lonlat,
+)
+from .hdr_parser import parse_chris_hdr_txt
 from .header import parse_envi_header
 
 ENVI_DTYPE_MAP = {
@@ -23,7 +32,18 @@ ENVI_DTYPE_MAP = {
 
 
 class RCIReader:
-    def __init__(self, rci_path, hdr_path, *, scale_factor=None, out_bands=None, out_dtype=None):
+    def __init__(
+        self,
+        rci_path,
+        hdr_path,
+        *,
+        scale_factor=None,
+        out_bands=None,
+        out_dtype=None,
+        hdr_txt_path=None,
+        gps_file=None,
+        centre_times_file=None,
+    ):
         self.rci_path = rci_path
         self.header = parse_envi_header(hdr_path)
 
@@ -70,8 +90,11 @@ class RCIReader:
                 )
 
         # Geo metadata placeholders
-        self.transform = self.header.get("map info")
-        self.crs = self.header.get("coordinate system string")  # we don't have this at the moment
+        self.hdr_txt_path = hdr_txt_path
+        self.gps_file = gps_file
+        self.centre_times_file = centre_times_file
+        self.crs = None
+        self.transform = None
 
         # Optional processing params
         self.scale_factor = scale_factor
@@ -109,12 +132,79 @@ class RCIReader:
             self.bands -= 1
             all_wavelengths = list(all_wavelengths)[1:]
 
+        # --- Optional GPS-based 180° flip (same intent as chris_georef.py) ---
+        if self.gps_file and self.centre_times_file:
+            try:
+                # year from hdr.txt (e.g. "2004")
+                meta_for_year = parse_chris_hdr_txt(self.hdr_txt_path) if self.hdr_txt_path else {}
+                ystr = str(meta_for_year.get("Image Date (yyyy-mm-dd)", ""))[:4]
+                year_filter = ystr if len(ystr) == 4 else None
+
+                firstrow = lastrow = None
+                with open(self.gps_file, "r") as f:
+                    r = csv.reader(f, delimiter="\t")
+                    seen = 0
+                    for row in r:
+                        if not row:
+                            continue
+                        if year_filter and (year_filter not in "".join(row)):
+                            continue
+                        if seen == 0:
+                            firstrow = row
+                            seen = 1
+                        else:
+                            lastrow = row
+                if firstrow and lastrow:
+                    ecef2geo = pyproj.Transformer.from_crs("EPSG:4978", "EPSG:4326")
+                    slat, slon, _ = ecef2geo.transform(
+                        float(firstrow[3].strip()),
+                        float(firstrow[5].strip()),
+                        float(firstrow[7].strip()),
+                    )
+                    elat, elon, _ = ecef2geo.transform(
+                        float(lastrow[3].strip()),
+                        float(lastrow[5].strip()),
+                        float(lastrow[7].strip()),
+                    )
+                    descending = slat > elat
+
+                    # image index from hdr.txt "Image No x of y" (e.g. "1 of 5")
+                    img_txt = meta_for_year.get("Image No x of y")
+                    try:
+                        image_idx = int(str(img_txt).split()[0])
+                    except Exception:
+                        image_idx = 1  # default like the script
+
+                    need_flip = (not descending and image_idx in (1, 3, 5)) or (
+                        descending and image_idx in (2, 4)
+                    )
+                    if need_flip:
+                        arr = np.flip(arr, axis=(1, 2))  # rot 180° on (y,x)
+            except Exception:
+                pass  # silently skip on any GPS parsing issue
+
+        x_vec = np.arange(self.width)
+        y_vec = np.arange(self.height)
+
+        if self.hdr_txt_path:
+            try:
+                chris_meta = parse_chris_hdr_txt(self.hdr_txt_path)
+                lon, lat, gsd = geo_extract_center_lat_lon_gsd(chris_meta)
+                if (lon is not None) and (lat is not None):
+                    epsg = geo_utm_epsg_from_lonlat(lon, lat)
+                    to_utm = pyproj.Transformer.from_crs(
+                        "EPSG:4326", f"EPSG:{epsg}", always_xy=True
+                    )
+                    east, north = to_utm.transform(lon, lat)
+                    gt = geo_affine_from_center(east, north, self.width, self.height, gsd, gsd)
+                    self.transform = gt
+                    self.crs = f"EPSG:{epsg}"
+                    x_vec, y_vec = geo_build_xy_coords(gt, self.width, self.height)
+            except Exception:
+                pass
+
         # Build DataArray with wavelength coordinate
-        coords = {
-            "band": np.arange(1, self.bands + 1),
-            "y": np.arange(self.height),
-            "x": np.arange(self.width),
-        }
+        coords = {"band": np.arange(1, self.bands + 1), "y": y_vec, "x": x_vec}
 
         if isinstance(all_wavelengths, (list, tuple)) and len(all_wavelengths) >= self.bands:
             # Attach the full list now; xarray will slice it if we subset bands later.
@@ -149,6 +239,11 @@ class RCIReader:
             else:
                 arr2 = da.values.astype(tgt)
             da = xr.DataArray(arr2, dims=da.dims, coords=da.coords, attrs=da.attrs)
+
+        if self.crs and self.transform:
+            da.attrs["spatial_ref"] = self.crs
+            da.attrs["GeoTransform"] = ",".join(map(str, self.transform))
+            da.attrs["grid_mapping"] = "crs"
 
         self.da = da
         return da
@@ -186,9 +281,10 @@ class RCIReader:
             "width": self.da.sizes["x"],
             "count": self.da.sizes["band"],
             "dtype": str(self.da.dtype),
-            "crs": self.crs,
-            "transform": self.transform,
         }
+        if self.crs and self.transform:
+            profile["crs"] = self.crs
+            profile["transform"] = rasterio.Affine.from_gdal(*self.transform)
         with rasterio.open(tmp, "w", **profile) as dst:
             for i in range(self.da.sizes["band"]):
                 dst.write(self.da.values[i], i + 1)

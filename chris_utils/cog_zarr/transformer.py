@@ -4,13 +4,35 @@ from .eopf_utils import write_eopf_cog, write_eopf_zarr
 from .reader import RCIReader
 
 
-def transform(rci, hdr, hdr_txt, bands, scale, dtype, zarr, cog, eopf_zarr, eopf_cog):
+def transform(
+    rci,
+    hdr,
+    hdr_txt,
+    bands=None,
+    scale=None,
+    dtype=None,
+    zarr=None,
+    cog=None,
+    eopf_zarr=None,
+    eopf_cog=None,
+    gps_file=None,
+    centre_times_file=None,
+):
     """Convert CHRIS .rci to COG, plain Zarr, and/or EOPF-compliant Zarr."""
     # parse band list
     band_list = [int(b) for b in bands.split(",")] if bands else None
 
     # read via our RCIReader
-    reader = RCIReader(rci, hdr, scale_factor=scale, out_bands=band_list, out_dtype=dtype)
+    reader = RCIReader(
+        rci,
+        hdr,
+        scale_factor=scale,
+        out_bands=band_list,
+        out_dtype=dtype,
+        hdr_txt_path=hdr_txt,
+        gps_file=gps_file,
+        centre_times_file=centre_times_file,
+    )
     da = reader.read()
 
     # 1) plain Zarr
