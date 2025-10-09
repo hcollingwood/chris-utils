@@ -35,23 +35,28 @@ all_wavelengths = {
 }
 
 
-def sin_deg(angle):
+def sin_deg(angle: float) -> float:
+    """Calculates the sine of an angle in degrees"""
     return math.sin(math.radians(angle))
 
 
-def cos_deg(angle):
+def cos_deg(angle: float) -> float:
+    """Calculates the cosine of an angle in degrees"""
     return math.cos(math.radians(angle))
 
 
-def asin_deg(angle):
+def asin_deg(angle: float) -> float:
+    """Calculates the inverse sine of an angle in degrees"""
     return math.degrees(math.sin(angle))
 
 
-def acos_deg(angle):
+def acos_deg(angle: float) -> float:
+    """Calculates the inverse cosine of an angle in degrees"""
     return math.degrees(math.cos(angle))
 
 
-def do_metadata_check(metadata: dict):
+def do_metadata_check(metadata: dict) -> None:
+    """Checks metadata required for EO-SIP generation to ensure it is present and valid"""
     regex_checks = {
         "chris_lattitude": r"[-]?\d+\.\d+",
         "chris_longitude": r"[-]?\d+\.\d+",
@@ -108,7 +113,8 @@ def do_metadata_check(metadata: dict):
 #         return dataset, metadata, thumbnail_rgb, [(data_file_name, file_data)]
 
 
-def process_cog(path):
+def process_cog(path: str) -> tuple[dict, np.ndarray, list]:
+    """Read in COG file and extract metadata, generate thumbnail, and collect file contents"""
     with open(f"{path}/attrs.json") as f:
         metadata = json.load(f)
     do_metadata_check(metadata)
@@ -149,7 +155,8 @@ def process_cog(path):
     return data, metadata, thumbnail_rgb, file_data
 
 
-def normalise_image(bands: list):
+def normalise_image(bands: list) -> list[np.ndarray]:
+    """Scale individual bands in image to have values between 0 and 1"""
 
     # normalise everything together
     # min_value = min([band.min() for band in bands])
@@ -212,7 +219,8 @@ def normalise_image(bands: list):
 #     return data, metadata, thumbnail_rgb, file_data
 
 
-def process_zarr(path):
+def process_zarr(path: str) -> tuple[dict, np.ndarray, list[str]]:
+    """Read in Zarr file and extract metadata, generate thumbnail, and collect file contents"""
     contents = xr.open_datatree(path, engine="zarr")
 
     metadata = contents.attrs
@@ -266,13 +274,14 @@ def process_zarr(path):
     return contents, metadata, thumbnail_rgb, file_data
 
 
-def prepare_image(image_data):
+def prepare_image(image_data: np.ndarray) -> Image:
     """Takes normalised image data (values between 0 and 1) and converts it to an image"""
     image = (image_data * 255).astype(np.uint8)
     return Image.fromarray(image, mode="RGB")
 
 
-def make_cog_thumbnail(image_data, metadata) -> bytes:
+def make_cog_thumbnail(image_data: np.ndarray, metadata: dict) -> bytes:
+    """Converts image data and metadata to a COG file"""
 
     tif_info = TiffImagePlugin.ImageFileDirectory_v2()
     tif_info[270] = str(metadata)
@@ -285,7 +294,8 @@ def make_cog_thumbnail(image_data, metadata) -> bytes:
     return img_byte_arr.getvalue()
 
 
-def process_safe(folder_path):
+def process_safe(folder_path: str) -> list[str]:
+    """Collects files from SAFE folder structure"""
     file_data = []
     file_root = "/".join(folder_path.rsplit("/")[:-1])
     for path, _, files in os.walk(folder_path):
@@ -298,18 +308,24 @@ def process_safe(folder_path):
     return file_data
 
 
-def make_rgb_thumbnail(thumbnail_r, thumbnail_g, thumbnail_b):
+def make_rgb_thumbnail(
+    thumbnail_r: np.ndarray, thumbnail_g: np.ndarray, thumbnail_b: np.ndarray
+) -> np.ndarray:
+    """Takes thumbnails from individual RGB bands and combines them into one image"""
     return np.stack([thumbnail_r, thumbnail_g, thumbnail_b], axis=-1)
 
 
-def get_band_indexes(wavelengths):
+def get_band_indexes(wavelengths: list) -> tuple[int, int, int]:
+    """Identifies the indices of bands corresponding to red, green and blue light"""
     red_band = get_band_index("red", wavelengths)
     green_band = get_band_index("green", wavelengths)
     blue_band = get_band_index("blue", wavelengths)
     return red_band, green_band, blue_band
 
 
-def get_band_index(colour, wavelengths):
+def get_band_index(colour: str, wavelengths: list) -> int:
+    """For a list of different wavelengths, identifies the index of the one closest to the centre of the
+    spectrum for a specified colour. Valid colour inputs: red, green, blue"""
     minimum, maximum = all_wavelengths[colour]
     valid_bands = []
     for i, band in enumerate(wavelengths):
@@ -328,7 +344,10 @@ def get_band_index(colour, wavelengths):
     return closest_matching_wavelength[0]
 
 
-def generate_metadata(file_identifier, data=None, metadata: dict = None, image=None, report=None):
+def generate_metadata(
+    file_identifier: str, data=None, metadata: dict = None, image=None, report=None
+) -> str:
+    """Generates file metadata ready for writing to file"""
     # TODO: check inputs and update/remove if not needed
     xml = EarthObservation(file_id=file_identifier, data=metadata).to_xml(
         pretty_print=True, encoding="UTF-8", standalone=True
@@ -337,7 +356,8 @@ def generate_metadata(file_identifier, data=None, metadata: dict = None, image=N
     return xml
 
 
-def generate_info(file_identifier):
+def generate_info() -> str:
+    """Generates metadata ready for writing to file"""
     parent_instance = SIPInfo(version="2.0", sip_creator="ESA", sip_creation_time=datetime.now())
 
     xml = parent_instance.to_xml(pretty_print=False, encoding="UTF-8", standalone=True)
@@ -357,17 +377,20 @@ def generate_info(file_identifier):
 #             return padded_number
 
 
-def write_to_file(data, file_name):
+def write_to_file(data: str, file_name: str) -> None:
+    """Writes data to a specified file"""
     with open(file_name, "w") as f:
         f.write(data)
 
 
-def make_image(data, file_name):
+def make_image(data: np.ndarray, file_name: str) -> None:
+    """Generates an image and saves it to disk"""
     im = Image.fromarray(data, mode="RGB")
     im.save(file_name)
 
 
-def make_png_thumbnail(image_data):
+def make_png_thumbnail(image_data: Image) -> bytes:
+    """Generates a .png"""
     im = prepare_image(image_data)
 
     img_byte_arr = io.BytesIO()
@@ -376,6 +399,7 @@ def make_png_thumbnail(image_data):
 
 
 def format_latitude(raw: str) -> str:
+    """Converts latitude to the format A11-111, where A is the hemisphere"""
     # raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
     # abs = math.fabs(raw_degrees)
     # abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
@@ -398,6 +422,7 @@ def format_latitude(raw: str) -> str:
 
 
 def format_longitude(raw: str) -> str:
+    """Converts longitude to the format A111-111, where A is the hemisphere"""
     # raw_decimal_degrees, raw_degrees = math.modf(raw)  # splits at decimal point
     # abs = math.fabs(raw_degrees)
     # abs_decimal = math.fabs(raw_decimal_degrees*1000)  # turn decimal into integer
@@ -420,7 +445,7 @@ def format_longitude(raw: str) -> str:
     return f"{hemisphere}{degrees}-{decimal_degrees}"
 
 
-def generate_file_name(metadata) -> str:
+def generate_file_name(metadata: dict) -> str:
     """Generates a file name from the provided metadata"""
 
     return (
@@ -430,7 +455,8 @@ def generate_file_name(metadata) -> str:
     )
 
 
-def get_file_size(path):
+def get_file_size(path: str) -> float:
+    """Calculates the size of a given file"""
     if os.path.isfile(path):
         total_size = os.path.getsize(path)
     else:
@@ -444,7 +470,8 @@ def get_file_size(path):
     return total_size
 
 
-def calculate_angles(metadata):
+def calculate_angles(metadata: dict) -> tuple[float, float]:
+    """Calculates the illumination azimuth and elevation angles from the latitude and longitude"""
     # illumination_azimuth_angle = "46.11*"  # astropy
     # illumination_elevation_angle = "61.47*"  # solar zenith angle
 
@@ -511,7 +538,8 @@ def convert_eo_sip(
     extras: str = None,
     sat_id: str = "PR1",
     file_class: str = "OPER",
-):
+) -> None:
+    """Converts a list of files to EO-SIP format"""
 
     if not os.path.exists(output):
         os.makedirs(output)
@@ -562,7 +590,7 @@ def convert_eo_sip(
         file_name = f"{file_name_root}_{version}"
 
         xml_metadata = generate_metadata(file_name, raw_data, metadata=raw_metadata, image=image)
-        xml_info = generate_info(file_name)
+        xml_info = generate_info()
         png_thumbnail = make_png_thumbnail(image)
         cog_thumbnail = make_cog_thumbnail(image, raw_metadata)
 

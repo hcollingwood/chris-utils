@@ -35,14 +35,14 @@ xml_schemas = {
 
 
 def calculate_crc_checksum(data: str) -> str:
-    """Uses CRC-16 checksums"""
+    """Calculates CRC-16 checksums"""
     crc = binascii.crc_hqx(data.encode("utf-8"), 0xFFFF)
 
     return f"{crc:04X}"  # 4 hexadecimal characters
 
 
 def make_manifest(paths: list = None) -> str:
-    """Generates manifest"""
+    """Generates SAFE XFDU manifest"""
 
     manifest = XFDU(data_objects=paths)
 
@@ -73,7 +73,7 @@ def write_manifest(metadata: str, path: str) -> None:
         f.write(metadata)
 
 
-def generate_file_name(metadata, suffix, output_dir):
+def generate_file_name(metadata: dict, suffix: str, output_dir: str) -> str:
     date_key = "ImageDate(yyyymmdd)"
     time_key = "CalculatedImageCentreTime"
 
@@ -100,7 +100,8 @@ class HeaderData:
         self.path = path
         self.read_data(path)
 
-    def read_data(self, path):
+    def read_data(self, path: str) -> None:
+        """Reads data from file"""
         with open(path, "r") as f:
             lines = f.readlines()
 
@@ -138,7 +139,8 @@ class HeaderData:
                 setattr(self, var, values)
 
 
-def do_metadata_check(metadata: dict):
+def do_metadata_check(metadata: dict) -> None:
+    """Checks metadata required for SAFE generation to ensure it is present and valid"""
     regex_checks = {
         "ImageDate(yyyymmdd)": r"[A-z0-9-\s]+",
         "CalculatedImageCentreTime": r"[A-z0-9-:\s]+",
@@ -158,7 +160,7 @@ def make_safe(
     inputs: str,
     output: str = ".",
     package_type: str = None,
-):
+) -> None:
     """Generates SAFE archive for specified input file(s)"""
 
     if not os.path.exists(output):
