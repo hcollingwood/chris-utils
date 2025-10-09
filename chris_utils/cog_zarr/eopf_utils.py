@@ -130,12 +130,13 @@ def _build_eopf_product(
         "platform": root_attrs.get("platform"),
         "instrument": root_attrs.get("instrument"),
     }
-    if _start_iso:
-        props["start_datetime"] = _start_iso
-    if _end_iso:
-        props["end_datetime"] = _end_iso
-    if centre_iso:
-        props["centre_datetime"] = centre_iso
+    # DO NOT ADD start/end/centre yet; waiting for precise spreadsheet
+    # if _start_iso:
+    #     props["start_datetime"] = _start_iso
+    # if _end_iso:
+    #     props["end_datetime"] = _end_iso
+    # if centre_iso:
+    #     props["centre_datetime"] = centre_iso
     product.attrs["stac_discovery"] = {"properties": props}
 
     # merge ENVI header + EOPF root attrs
@@ -149,6 +150,8 @@ def _build_eopf_product(
     if gains := extract_gain_table(hdr_txt_path):
         product.attrs["gain_table"] = gains
 
+    product.attrs.pop("wavelength", None)
+
     # product-level measurement
     product.attrs["measurement"] = "radiance"
     if units:
@@ -157,21 +160,15 @@ def _build_eopf_product(
     # Authoritative band count after any plane drop/selection
     product.attrs["bands"] = int(da.sizes["band"])
 
-    # Lightweight NoData semantics for Zarr consumers
-    product.attrs["nodata"] = 0
-
-    # Overwrite wavelength list with post-drop values (removes leading 0.0)
-    if "wavelength" in da.coords:
-        product.attrs["wavelength"] = [float(v) for v in da["wavelength"].values.tolist()]
-
     # Container-aware replacements and cleanup
     if product_format:
         # Explicitly declare container type and data layout
         pf = product_format.upper()
         product.attrs["file_type"] = "COG" if pf == "COG" else "ZARR"
         product.attrs["dtype"] = str(da.dtype)
+        product.attrs["bit_depth"] = 10
         try:
-            product.attrs["bit_depth"] = int(getattr(da.dtype, "itemsize", 0) * 8)
+            product.attrs["product_bit_depth"] = int(getattr(da.dtype, "itemsize", 0) * 8)
         except Exception:
             pass
 
@@ -189,6 +186,13 @@ def _build_eopf_product(
         "datetime",  # kept in stac_discovery
         "chris_sensor_type",
         "chris_mask_key_information",
+        "chris_image_date_yyyy_mm_dd_",
+        "chris_gain_setting",
+        "chris_calculated_image_centre_time",
+        "chris_no_of_samples",
+        "chris_no_of_ground_lines",
+        "chris_longitude",
+        "chris_lattitude",
     ):
         product.attrs.pop(k, None)
 
