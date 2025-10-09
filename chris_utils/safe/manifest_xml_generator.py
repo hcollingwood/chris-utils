@@ -85,7 +85,8 @@ class InformationPackageMap(BaseXmlModel, tag="informationPackageMap", ns=""):
     content_unit: ContentUnitOuter
 
 
-def calculate_md5_checksum(file_path: str):
+def calculate_md5_checksum(file_path: str) -> str:
+    """Calculates the MD5 checksum for a specified file"""
     with open(file_path, "rb") as f:
         data = f.read()
         return hashlib.md5(data).hexdigest()

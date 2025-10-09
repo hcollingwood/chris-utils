@@ -8,11 +8,11 @@ from chris_utils.safe.dat_xml_generator import (
     Documentation,
     Element,
 )
-from chris_utils.safe.dat_xml_generator import Schema as DATSchema
-from chris_utils.safe.dat_xml_generator import Sequence
+from chris_utils.safe.dat_xml_generator import Schema, Sequence
 
 
-def dat_schema():
+def dat_schema() -> Schema:
+    """Returns a schema for .dat files"""
     complex_elements = [
         Element(
             name="pixel",
@@ -68,7 +68,7 @@ def dat_schema():
         type="pixelType",
         annotation=Annotation(documentation=documentation),
     )
-    xml = DATSchema(
+    xml = Schema(
         element=element,
         complex_type=complex_type,
     )
@@ -76,7 +76,8 @@ def dat_schema():
     return xml
 
 
-def hdr_schema():
+def hdr_schema() -> Schema:
+    """Returns a schema for .hrd files"""
     complex_elements = [
         Element(
             name="hdr",
@@ -113,7 +114,7 @@ def hdr_schema():
         type="hdrType",
         annotation=Annotation(documentation=documentation),
     )
-    xml = DATSchema(
+    xml = Schema(
         element=element,
         complex_type=complex_type,
     )
@@ -121,7 +122,8 @@ def hdr_schema():
     return xml
 
 
-def set_schema():
+def set_schema() -> Schema:
+    """Returns a schema for .set files"""
     complex_elements = [
         Element(
             name="set",
@@ -158,7 +160,7 @@ def set_schema():
         type="setType",
         annotation=Annotation(documentation=documentation),
     )
-    xml = DATSchema(
+    xml = Schema(
         element=element,
         complex_type=complex_type,
     )
@@ -166,7 +168,8 @@ def set_schema():
     return xml
 
 
-def txt_schema():
+def txt_schema() -> Schema:
+    """Returns a schema for .txt files"""
     complex_elements = [
         Element(
             name="txt",
@@ -204,7 +207,7 @@ def txt_schema():
         type="txtType",
         annotation=Annotation(documentation=documentation),
     )
-    xml = DATSchema(
+    xml = Schema(
         element=element,
         complex_type=complex_type,
     )

@@ -4,7 +4,8 @@ import re
 from datetime import datetime
 
 
-def get_list_of_files(inputs: list):
+def get_list_of_files(inputs: list) -> list[str]:
+    """Searches for valid input files in a list of provided directories"""
     files = []
 
     error_message = "%s not recognised. Ensure that path is valid"
@@ -31,7 +32,8 @@ def get_list_of_files(inputs: list):
     return files
 
 
-def get_version(root, suffix, output_folder="."):
+def get_version(root: str, suffix: str, output_folder=".") -> str:
+    """Increments version to the next available number"""
     version = 1
     while True:
         padded_number = f"{version:0>4}"
@@ -45,11 +47,13 @@ def get_version(root, suffix, output_folder="."):
 
 def check_metadata(
     metadata: dict,
-    regex_checks=None,
-    list_checks=None,
-    numeric_string_checks=None,
-    datetime_string_checks=None,
-):
+    regex_checks: dict=None,
+    list_checks:dict=None,
+    numeric_string_checks:dict=None,
+    datetime_string_checks:dict=None,
+) -> None:
+    """Checks provided metadata against a list of expected formats and raises errors if inputs are missing or
+    in an incorrect format"""
 
     if datetime_string_checks is None:
         datetime_string_checks = {}
