@@ -15,7 +15,7 @@ EOConfiguration().logging__dask_level = "DEBUG"
 
 
 def _norm_keys(d: dict) -> dict:
-    """Convert key to lowercase keys and normalize internal whitespace"""
+    """Convert key to lowercase and normalize internal whitespace"""
     return {re.sub(r"\s+", " ", k).strip().lower(): v for k, v in d.items()}
 
 
