@@ -1,8 +1,21 @@
 # chris-utils
 
+The chris-utils Python package is intended for use during the conversion of Level 0 to Level 1 data and 
+contains tools to:
+- read in Level 0 data
+- produce COG files
+- produce Zarr files
+- produce PNG thumbnails
+- produce COG thumbnails
+- produce EO-SIP files
+- produce SAFE files
+
+This package has a dependency of Python 3.11 due to the EOPF package which is used for generation of COG 
+and Zarr files.
 
 ## Installing
-Add this package to your requirements and run locally
+Add this package to your requirements and run locally, or install via pip.
+
 
 ## Usage
 
@@ -39,5 +52,7 @@ inputs = "path/to/file/to/be/converted.tif"
 extras = "path/to/safe/file.SAFE"
 
 convert_eo_sip(inputs=inputs, output=output, extras=extras)
-
 ```
+
+## Tests
+Tests are written for [pytest](https://pytest.org/). To run tests, run `pytest tests` from the top level.
