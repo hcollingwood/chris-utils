@@ -9,7 +9,7 @@ from eopf.product import EOGroup, EOProduct, EOVariable
 from eopf.store.cog import EOCogStore
 from eopf.store.zarr import EOZarrStore
 
-from .hdr_parser import build_eopf_root_attrs, extract_gain_table, parse_chris_hdr_txt
+from .hdr_parser import build_eopf_root_attrs, parse_chris_hdr_txt
 
 EOConfiguration().logging__level = "DEBUG"
 EOConfiguration().logging__dask_level = "DEBUG"
@@ -56,7 +56,9 @@ def _build_eopf_product(
     # parse CHRIS metadata & EOPF root attrs
     chris_meta = parse_chris_hdr_txt(hdr_txt_path)
     root_attrs = build_eopf_root_attrs(chris_meta, hdr_txt_path)
-    _meta_with_table = parse_chris_hdr_txt(hdr_txt_path, keep_spectral_table=True)
+    _meta_with_table = parse_chris_hdr_txt(
+        hdr_txt_path, keep_spectral_table=True, keep_gain_table=True
+    )
 
     # Derive start/end datetime from centre time, mode and number of lines
     centre_iso = root_attrs.get("datetime")  # ISO centre time
@@ -147,7 +149,7 @@ def _build_eopf_product(
     if table := _meta_with_table.get("spectral_table"):
         product.attrs["spectral_table"] = table
 
-    if gains := extract_gain_table(hdr_txt_path):
+    if gains := _meta_with_table.get("gain_table"):
         product.attrs["gain_table"] = gains
 
     product.attrs.pop("wavelength", None)

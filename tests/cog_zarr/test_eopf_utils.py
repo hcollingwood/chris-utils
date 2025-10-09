@@ -57,10 +57,12 @@ def test_build_eopf_product_minimal_cpm(monkeypatch, tmp_path):
     hdr_txt_path = str(tmp_path / "dummy.hdr.txt")
 
     # Fake CHRIS meta + root attrs
-    def fake_parse(_path, keep_spectral_table: bool = False):
-        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+    def fake_parse(_path, keep_spectral_table: bool = False, keep_gain_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # or "1" in the mode-1 test
         if keep_spectral_table:
-            d["spectral_table"] = []  # ok to be empty for the test
+            d["spectral_table"] = []  # ok to be empty
+        if keep_gain_table:
+            d["gain_table"] = []  # ok to be empty
         return d
 
     def fake_root(_meta, _path):
@@ -122,10 +124,12 @@ def test_build_eopf_product_mode1_still_image_base(monkeypatch, tmp_path):
     """Mode 1 (36 m) still uses the same CPM base: measurements/image."""
     da = small_da(nb=2)
 
-    def fake_parse(_path, keep_spectral_table: bool = False):
-        d = {"CHRIS Mode": "1"}  # -> 36 m
+    def fake_parse(_path, keep_spectral_table: bool = False, keep_gain_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # or "1" in the mode-1 test
         if keep_spectral_table:
-            d["spectral_table"] = []
+            d["spectral_table"] = []  # ok to be empty
+        if keep_gain_table:
+            d["gain_table"] = []  # ok to be empty
         return d
 
     def fake_root(_m, _p):
@@ -146,10 +150,12 @@ def test_build_eopf_product_name_from_hdr(monkeypatch, tmp_path):
     hdr_txt = str(tmp_path / "CHRIS_ABC_123.hdr.txt")
     (tmp_path / "CHRIS_ABC_123.hdr.txt").write_text("", encoding="utf-8")
 
-    def fake_parse(_path, keep_spectral_table: bool = False):
-        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+    def fake_parse(_path, keep_spectral_table: bool = False, keep_gain_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # or "1" in the mode-1 test
         if keep_spectral_table:
-            d["spectral_table"] = []  # ok to be empty for the test
+            d["spectral_table"] = []  # ok to be empty
+        if keep_gain_table:
+            d["gain_table"] = []  # ok to be empty
         return d
 
     def fake_root(_m, _p):
@@ -173,10 +179,12 @@ def test_write_eopf_zarr_writes_product(monkeypatch, tmp_path):
     hdr_txt = str(tmp_path / "dummy.hdr.txt")
     out_path = str(tmp_path / "MyProd.eopf.zarr")
 
-    def fake_parse(_path, keep_spectral_table: bool = False):
-        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+    def fake_parse(_path, keep_spectral_table: bool = False, keep_gain_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # or "1" in the mode-1 test
         if keep_spectral_table:
-            d["spectral_table"] = []  # ok to be empty for the test
+            d["spectral_table"] = []  # ok to be empty
+        if keep_gain_table:
+            d["gain_table"] = []  # ok to be empty
         return d
 
     def fake_root(_m, _p):
@@ -242,10 +250,12 @@ def test_write_eopf_cog_structure(monkeypatch, tmp_path):
     hdr_txt = str(tmp_path / "dummy.hdr.txt")
     out_dir = str(tmp_path / "MyProd.eopf.cog")
 
-    def fake_parse(_path, keep_spectral_table: bool = False):
-        d = {"CHRIS Mode": "2"}  # -> 18 m (not encoded in path now)
+    def fake_parse(_path, keep_spectral_table: bool = False, keep_gain_table: bool = False):
+        d = {"CHRIS Mode": "2"}  # or "1" in the mode-1 test
         if keep_spectral_table:
-            d["spectral_table"] = []  # ok to be empty for the test
+            d["spectral_table"] = []  # ok to be empty
+        if keep_gain_table:
+            d["gain_table"] = []  # ok to be empty
         return d
 
     def fake_root(_m, _p):

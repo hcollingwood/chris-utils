@@ -4,7 +4,9 @@ from datetime import datetime
 from typing import Dict, List
 
 
-def parse_chris_hdr_txt(txt_path: str, keep_spectral_table: bool = False) -> Dict[str, str]:
+def parse_chris_hdr_txt(
+    txt_path: str, keep_spectral_table: bool = False, keep_gain_table: bool = False
+) -> Dict[str, str]:
     """
     Parse a CHRIS ASCII header dump (e.g. *.hdr.txt) into a metadata dict.
     Supports:
@@ -27,6 +29,8 @@ def parse_chris_hdr_txt(txt_path: str, keep_spectral_table: bool = False) -> Dic
     spectral_rows: List[Dict[str, str]] = []
     in_table = False
 
+    gain_rows: List[Dict[str, float]] = []
+    in_gain = False
     with open(txt_path, "r", encoding="utf-8") as f:
         for line in f:
             raw = line.rstrip("\n")
@@ -54,6 +58,11 @@ def parse_chris_hdr_txt(txt_path: str, keep_spectral_table: bool = False) -> Dic
                 if in_table and not keep_spectral_table:
                     continue
 
+                # gain table header
+                if keep_gain_table and ("Gain Setting" in text and "Gain Value" in text):
+                    in_gain = True
+                    continue
+
                 # skip pure headers / section titles
                 if not text or text.upper().endswith("ATTRIBUTES"):
                     last_key = None
@@ -79,10 +88,33 @@ def parse_chris_hdr_txt(txt_path: str, keep_spectral_table: bool = False) -> Dic
                     row_vals = re.split(r"\s+", raw.strip())
                     if len(row_vals) == len(columns):
                         spectral_rows.append(dict(zip(columns, row_vals, strict=False)))
+                elif in_gain and keep_gain_table:
+                    raw2 = raw.strip()
+                    # empty or next section ends the gain block
+                    if not raw2 or raw2.startswith("//"):
+                        in_gain = False
+                    else:
+                        parts = re.split(r"\s+", raw2)
+                        if len(parts) >= 2 and parts[0].isdigit():
+                            try:
+                                gain_rows.append(
+                                    {
+                                        "setting": int(parts[0]),
+                                        "value": float(parts[1]),
+                                    }
+                                )
+                            except Exception:
+                                pass
+                        else:
+                            # first line that doesn't look like a gain row ends the block
+                            in_gain = False
 
     # attach spectral table if we collected it
     if keep_spectral_table:
         meta["spectral_table"] = spectral_rows
+
+    if keep_gain_table:
+        meta["gain_table"] = gain_rows
 
     return meta
 
@@ -129,38 +161,3 @@ def build_eopf_root_attrs(chris_meta: dict, hdr_filename: str) -> dict:
             continue
         attrs[f"chris_{clean}"] = v
     return attrs
-
-
-def extract_gain_table(txt_path: str):
-    """
-    Parse the 'Gain Setting / Gain Value' block from a CHRIS .hdr.txt file.
-
-    Returns a list of {"setting": int, "value": float}.
-    """
-    rows = []
-    try:
-        with open(txt_path, "r", encoding="utf-8") as f:
-            lines = [ln.rstrip("\n") for ln in f]
-
-        for i, comment_line in enumerate(lines):
-            line = comment_line.lstrip()
-            if line.startswith("//") and "Gain Setting" in line and "Gain Value" in line:
-                # Consume subsequent data lines until a blank or comment
-                for data_line in lines[i + 1 :]:
-                    raw = data_line.strip()
-                    if not raw or raw.startswith("//"):
-                        break
-                    parts = re.split(r"\s+", raw)
-                    if len(parts) >= 2 and parts[0].isdigit():
-                        try:
-                            rows.append({"setting": int(parts[0]), "value": float(parts[1])})
-                        except Exception:
-                            # skip malformed lines but continue parsing the block
-                            pass
-                    else:
-                        # first non-table line ends the block
-                        break
-                break
-    except Exception:
-        return []
-    return rows
