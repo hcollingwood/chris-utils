@@ -274,3 +274,95 @@ def test_write_eopf_cog_structure(monkeypatch, tmp_path):
 )
 def test_gsd_from_mode(mode, expected):
     assert eu._gsd_from_mode({"CHRIS Mode": mode}) == expected
+
+
+def _small_da(nb=2, ny=3, nx=4):
+    data = np.arange(nb * ny * nx, dtype="float32").reshape(nb, ny, nx)
+    return xr.DataArray(
+        data,
+        dims=("band", "y", "x"),
+        coords={"band": np.arange(1, nb + 1), "y": np.arange(ny), "x": np.arange(nx)},
+    )
+
+
+@pytest.mark.skipif(
+    not hasattr(eu, "_build_eopf_product"), reason="_build_eopf_product not present"
+)
+def test_eopf_uses_geo_helpers_for_crs_and_geometry(monkeypatch, tmp_path):
+    da = _small_da()
+    # Inject spatial_ref onto da so geo_epsg_from_da returns a code
+    da.attrs["spatial_ref"] = "EPSG:32612"
+
+    # Monkeypatch parse/root to avoid real hdr.txt
+    monkeypatch.setattr(eu, "parse_chris_hdr_txt", lambda p: {"CHRIS Mode": "2"}, raising=True)
+    monkeypatch.setattr(
+        eu,
+        "build_eopf_root_attrs",
+        lambda m, p: {"product_type": "X", "datetime": "Y", "platform": "P", "instrument": "I"},
+        raising=True,
+    )
+
+    # Monkeypatch geo helpers:
+    monkeypatch.setattr(eu, "geo_epsg_from_da", lambda _da: 32612, raising=True)
+
+    def fake_geom_arrays(_da, _meta):
+        return {
+            "sza": np.full((da.sizes["y"], da.sizes["x"]), 45.0, dtype="float32"),
+            "oza": np.full((da.sizes["y"], da.sizes["x"]), 10.0, dtype="float32"),
+        }
+
+    monkeypatch.setattr(eu, "geo_constant_geometry_arrays", fake_geom_arrays, raising=True)
+
+    product, base = eu._build_eopf_product(
+        da,
+        {"calibration data units": "uW/nm/m^2/sr"},
+        str(tmp_path / "dummy.hdr.txt"),
+        product_name="Prod",
+    )
+
+    # CRS variable exists and has grid mapping attrs
+    assert f"{base}/crs" in product
+    crs_var = product[f"{base}/crs"]
+    assert crs_var.attrs.get("spatial_ref") == "EPSG:32612"
+
+    # geometry group exists with sza/oza and has grid_mapping attr
+    assert "conditions" in product and "geometry" in product["conditions"]
+    for k in ("sza", "oza"):
+        v = product[f"conditions/geometry/{k}"]
+        assert v.dims == ("y", "x")
+        assert v.attrs.get("grid_mapping") == "crs"
+
+    # measurements are present and tagged
+    for i in da.band.values:
+        vname = f"oa{int(i):02d}_radiance"
+        v = product[f"{base}/{vname}"]
+        assert v.attrs.get("measurement") == "radiance"
+        assert v.attrs.get("units") == "uW/nm/m^2/sr"
+
+
+def test_build_eopf_product_with_crs_and_geometry(monkeypatch, tmp_path):
+    import chris_utils.cog_zarr.eopf_utils as eu
+
+    da = small_da(nb=1)
+    da.attrs["spatial_ref"] = "EPSG:32612"
+
+    monkeypatch.setattr(eu, "parse_chris_hdr_txt", lambda p: {}, raising=True)
+    monkeypatch.setattr(
+        eu,
+        "build_eopf_root_attrs",
+        lambda m, p: {"product_type": "X", "datetime": "Y", "platform": "P", "instrument": "I"},
+        raising=True,
+    )
+    monkeypatch.setattr(eu, "geo_epsg_from_da", lambda _da: 32612, raising=True)
+    monkeypatch.setattr(
+        eu,
+        "geo_constant_geometry_arrays",
+        lambda _da, _m: {"sza": np.zeros((da.sizes["y"], da.sizes["x"]), dtype="float32")},
+        raising=True,
+    )
+
+    product, base = eu._build_eopf_product(
+        da, {}, str(tmp_path / "dummy.hdr.txt"), product_name="P"
+    )
+    assert f"{base}/crs" in product
+    assert "conditions/geometry/sza" in product

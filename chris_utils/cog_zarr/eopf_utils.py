@@ -9,7 +9,7 @@ from eopf.product import EOGroup, EOProduct, EOVariable
 from eopf.store.cog import EOCogStore
 from eopf.store.zarr import EOZarrStore
 
-from .geo import geo_grid_mapping_attrs
+from .geo import geo_constant_geometry_arrays, geo_epsg_from_da, geo_grid_mapping_attrs
 from .hdr_parser import build_eopf_root_attrs, parse_chris_hdr_txt
 
 EOConfiguration().logging__level = "DEBUG"
@@ -77,33 +77,16 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     product[f"{base}/y"] = EOVariable(data=da["y"].values, dims=("y",))
     product[f"{base}/x"] = EOVariable(data=da["x"].values, dims=("x",))
 
-    epsg = None
-    epsg_str = da.attrs.get("spatial_ref")  # e.g. "EPSG:32612"
-    if isinstance(epsg_str, str) and epsg_str.upper().startswith("EPSG:"):
-        try:
-            epsg = int(epsg_str.split(":")[1])
-            product[f"{base}/crs"] = EOVariable(data=np.array(0, dtype="uint8"), dims=())
-            product[f"{base}/crs"].attrs.update(geo_grid_mapping_attrs(epsg))
-        except Exception:
-            epsg = None
+    epsg = geo_epsg_from_da(da)
+    if epsg:
+        product[f"{base}/crs"] = EOVariable(data=np.array(0, dtype="uint8"), dims=())
+        product[f"{base}/crs"].attrs.update(geo_grid_mapping_attrs(epsg))
 
-    geom_vals = {
-        "sza": _norm_keys(chris_meta).get("solar zenith angle"),
-        "oza": _norm_keys(chris_meta).get("observation zenith angle"),
-        "oaa": _norm_keys(chris_meta).get("observation azimuth angle"),
-        "saa": _norm_keys(chris_meta).get("solar azimuth angle"),
-    }
-    if any(v is not None for v in geom_vals.values()):
+    geom_arrays = geo_constant_geometry_arrays(da, chris_meta)
+    if geom_arrays:
         product["conditions"] = EOGroup()
         product["conditions/geometry"] = EOGroup()
-        H, W = int(da.sizes["y"]), int(da.sizes["x"])
-        for name, val in geom_vals.items():
-            if val is None:
-                continue
-            try:
-                arr = np.full((H, W), float(val), dtype="float32")
-            except Exception:
-                continue
+        for name, arr in geom_arrays.items():
             gvar = EOVariable(data=arr, dims=("y", "x"))
             if epsg:
                 gvar.attrs["grid_mapping"] = "crs"

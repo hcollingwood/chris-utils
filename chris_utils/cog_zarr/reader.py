@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 
@@ -13,6 +12,7 @@ from .geo import (
     geo_affine_from_center,
     geo_build_xy_coords,
     geo_extract_center_lat_lon_gsd,
+    geo_flip_using_gps,
     geo_utm_epsg_from_lonlat,
 )
 from .hdr_parser import parse_chris_hdr_txt
@@ -132,56 +132,8 @@ class RCIReader:
             self.bands -= 1
             all_wavelengths = list(all_wavelengths)[1:]
 
-        # --- Optional GPS-based 180° flip (same intent as chris_georef.py) ---
-        if self.gps_file and self.centre_times_file:
-            try:
-                # year from hdr.txt (e.g. "2004")
-                meta_for_year = parse_chris_hdr_txt(self.hdr_txt_path) if self.hdr_txt_path else {}
-                ystr = str(meta_for_year.get("Image Date (yyyy-mm-dd)", ""))[:4]
-                year_filter = ystr if len(ystr) == 4 else None
-
-                firstrow = lastrow = None
-                with open(self.gps_file, "r") as f:
-                    r = csv.reader(f, delimiter="\t")
-                    seen = 0
-                    for row in r:
-                        if not row:
-                            continue
-                        if year_filter and (year_filter not in "".join(row)):
-                            continue
-                        if seen == 0:
-                            firstrow = row
-                            seen = 1
-                        else:
-                            lastrow = row
-                if firstrow and lastrow:
-                    ecef2geo = pyproj.Transformer.from_crs("EPSG:4978", "EPSG:4326")
-                    slat, slon, _ = ecef2geo.transform(
-                        float(firstrow[3].strip()),
-                        float(firstrow[5].strip()),
-                        float(firstrow[7].strip()),
-                    )
-                    elat, elon, _ = ecef2geo.transform(
-                        float(lastrow[3].strip()),
-                        float(lastrow[5].strip()),
-                        float(lastrow[7].strip()),
-                    )
-                    descending = slat > elat
-
-                    # image index from hdr.txt "Image No x of y" (e.g. "1 of 5")
-                    img_txt = meta_for_year.get("Image No x of y")
-                    try:
-                        image_idx = int(str(img_txt).split()[0])
-                    except Exception:
-                        image_idx = 1  # default like the script
-
-                    need_flip = (not descending and image_idx in (1, 3, 5)) or (
-                        descending and image_idx in (2, 4)
-                    )
-                    if need_flip:
-                        arr = np.flip(arr, axis=(1, 2))  # rot 180° on (y,x)
-            except Exception:
-                pass  # silently skip on any GPS parsing issue
+        # GPS-based 180° flip
+        arr = geo_flip_using_gps(arr, self.hdr_txt_path, self.gps_file, self.centre_times_file)
 
         x_vec = np.arange(self.width)
         y_vec = np.arange(self.height)
