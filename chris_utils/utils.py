@@ -47,10 +47,10 @@ def get_version(root: str, suffix: str, output_folder=".") -> str:
 
 def check_metadata(
     metadata: dict,
-    regex_checks: dict=None,
-    list_checks:dict=None,
-    numeric_string_checks:dict=None,
-    datetime_string_checks:dict=None,
+    regex_checks: dict = None,
+    list_checks: dict = None,
+    numeric_string_checks: dict = None,
+    datetime_string_checks: dict = None,
 ) -> None:
     """Checks provided metadata against a list of expected formats and raises errors if inputs are missing or
     in an incorrect format"""

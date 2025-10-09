@@ -308,7 +308,9 @@ def process_safe(folder_path: str) -> list[str]:
     return file_data
 
 
-def make_rgb_thumbnail(thumbnail_r: np.ndarray, thumbnail_g: np.ndarray, thumbnail_b: np.ndarray) -> np.ndarray:
+def make_rgb_thumbnail(
+    thumbnail_r: np.ndarray, thumbnail_g: np.ndarray, thumbnail_b: np.ndarray
+) -> np.ndarray:
     """Takes thumbnails from individual RGB bands and combines them into one image"""
     return np.stack([thumbnail_r, thumbnail_g, thumbnail_b], axis=-1)
 
@@ -322,8 +324,8 @@ def get_band_indexes(wavelengths: list) -> tuple[int, int, int]:
 
 
 def get_band_index(colour: str, wavelengths: list) -> int:
-    """For a list of different wavelengths, identifies the index of the one closest to the centre of the spectrum
-    for a specified colour. Valid colour inputs: red, green, blue"""
+    """For a list of different wavelengths, identifies the index of the one closest to the centre of the
+    spectrum for a specified colour. Valid colour inputs: red, green, blue"""
     minimum, maximum = all_wavelengths[colour]
     valid_bands = []
     for i, band in enumerate(wavelengths):
@@ -342,7 +344,9 @@ def get_band_index(colour: str, wavelengths: list) -> int:
     return closest_matching_wavelength[0]
 
 
-def generate_metadata(file_identifier: str, data=None, metadata: dict = None, image=None, report=None) -> str:
+def generate_metadata(
+    file_identifier: str, data=None, metadata: dict = None, image=None, report=None
+) -> str:
     """Generates file metadata ready for writing to file"""
     # TODO: check inputs and update/remove if not needed
     xml = EarthObservation(file_id=file_identifier, data=metadata).to_xml(

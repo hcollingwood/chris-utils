@@ -7,8 +7,9 @@ from chris_utils.safe.dat_xml_generator import (
     ComplexType,
     Documentation,
     Element,
+    Schema,
+    Sequence,
 )
-from chris_utils.safe.dat_xml_generator import Schema, Sequence
 
 
 def dat_schema() -> Schema:
