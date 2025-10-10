@@ -554,7 +554,7 @@ def convert_eo_sip(
     all_file_data = []
 
     if extras and os.path.isdir(extras) and extras.endswith(".SAFE"):
-        logging.info('Generating SAFE EO-SIP')
+        logging.info("Generating SAFE EO-SIP")
         safe = True
 
     debug_dir = "debug"
@@ -599,9 +599,7 @@ def convert_eo_sip(
 
                     # zip_directory(centre_image_data.file_data, file_name_short, zip_file)
 
-
             file_size = get_file_size(all_zip_file_name)
-
 
             # TODO: verify that all the required inputs are in the metadata file
             raw_metadata = centre_image_data.raw_metadata
@@ -624,9 +622,10 @@ def convert_eo_sip(
             raw_metadata["formatted_timestamp"] = timestamp.strftime("%Y%m%dT%H%M%S")
             file_name_root = generate_file_name(raw_metadata)
 
-            raw_metadata["illumination_azimuth_angle"], raw_metadata["illumination_elevation_angle"] = (
-                calculate_angles(raw_metadata)
-            )
+            (
+                raw_metadata["illumination_azimuth_angle"],
+                raw_metadata["illumination_elevation_angle"],
+            ) = calculate_angles(raw_metadata)
 
             version = get_version(file_name_root, ".SIP.ZIP", output)
             file_name = f"{file_name_root}_{version}"
@@ -649,9 +648,7 @@ def convert_eo_sip(
             zip_wrapper_file_name = f"{output}/{file_name}.SIP.ZIP"
 
             logging.info(f"Writing to {zip_file_name}")
-            with zipfile.ZipFile(
-                zip_wrapper_file_name, "w", zipfile.ZIP_DEFLATED
-            ) as zip_file:
+            with zipfile.ZipFile(zip_wrapper_file_name, "w", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr(png_file_name, png_thumbnail)
                 zip_file.writestr(cog_file_name, cog_thumbnail)
                 zip_file.writestr(metadata_file_name, xml_metadata)
