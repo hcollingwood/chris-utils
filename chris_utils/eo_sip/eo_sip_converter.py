@@ -121,7 +121,7 @@ def process_cog(path: str) -> tuple[dict, np.ndarray, list]:
         metadata = json.load(f)
     do_metadata_check(metadata)
 
-    r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
+    r_band, g_band, b_band = get_band_indices(metadata["wavelength"])
 
     longest_group, _, files = max(os.walk(path))
     files = sorted([file for file in files if file.endswith(".tif")])
@@ -228,7 +228,7 @@ def process_zarr(path: str) -> tuple[dict, np.ndarray, list[str]]:
     metadata = contents.attrs
     do_metadata_check(metadata)
 
-    r_band, g_band, b_band = get_band_indexes(metadata["wavelength"])
+    r_band, g_band, b_band = get_band_indices(metadata["wavelength"])
 
     measurement_groups = [g for g in contents.groups if g.startswith("/measurements")]
     longest_group = max(measurement_groups)
@@ -317,7 +317,7 @@ def make_rgb_thumbnail(
     return np.stack([thumbnail_r, thumbnail_g, thumbnail_b], axis=-1)
 
 
-def get_band_indexes(wavelengths: list) -> tuple[int, int, int]:
+def get_band_indices(wavelengths: list) -> tuple[int, int, int]:
     """Identifies the indices of bands corresponding to red, green and blue light"""
     red_band = get_band_index("red", wavelengths)
     green_band = get_band_index("green", wavelengths)
@@ -543,6 +543,8 @@ class Data:
 
 
 def identify_centre_image(all_data: list) -> Data:
+    """Finds the centre image, or the closest available image if centre image is
+    missing. Centre image is labelled `1 of x`"""
 
     all_positions = []
     for data in all_data:
