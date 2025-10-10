@@ -15,7 +15,7 @@ EOConfiguration().logging__dask_level = "DEBUG"
 
 
 def _norm_keys(d: dict) -> dict:
-    # Lowercase keys and normalize internal whitespace
+    """Convert key to lowercase and normalize internal whitespace"""
     return {re.sub(r"\s+", " ", k).strip().lower(): v for k, v in d.items()}
 
 
@@ -33,7 +33,7 @@ def _gsd_from_mode(chris_meta: dict) -> int:
 
 
 def _radiance_units(envi_header: dict, root_attrs: dict) -> str | None:
-    # Prefer the CHRIS/EOPF field if present; otherwise fall back to ENVI key
+    """Return radiance units. Prefer the CHRIS/EOPF field if present; otherwise fall back to ENVI key"""
     return (
         root_attrs.get("chris_calibration_data_units")
         or envi_header.get("calibration data units")
