@@ -58,6 +58,7 @@ def do_metadata_check(metadata: dict):
         "chris_chris_mode": r"([1-5]|hrc)",
         "chris_image_date_yyyy_mm_dd_": r"[A-z0-9-\s]+",
         "chris_calculated_image_centre_time": r"[A-z0-9-:\s]+",
+        "chris_image_no_x_of_y": r"[0-9]+\sof\s[0-9]+",
     }
     list_checks = {
         "wavelength": (int, float, np.floating),
@@ -517,7 +518,7 @@ def identify_centre_image(all_data: list) -> Data:
             0
         ]  # first value before whitespace
 
-        if position == 3:  # centre image identified
+        if int(position) == 1:  # centre image identified
             return data
 
         all_positions.append((position, data))
