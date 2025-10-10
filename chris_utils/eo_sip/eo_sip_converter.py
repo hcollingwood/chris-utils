@@ -60,7 +60,7 @@ def do_metadata_check(metadata: dict):
         "chris_calculated_image_centre_time": r"[A-z0-9-:\s]+",
     }
     list_checks = {
-        "wavelength": float,
+        "wavelength": (int, float, np.floating),
     }
 
     numeric_string_checks = {"chris_lattitude": [-90, 90], "chris_longitude": [-180, 180]}
@@ -410,9 +410,7 @@ def format_longitude(raw: str) -> str:
         raw_degrees = raw_degrees[1:]
     else:
         hemisphere = "E"
-    raw_degrees = '12'
     degrees = f"{int(raw_degrees):03}"
-
     decimal_degrees = f"{decimal_degrees:03}"
 
     return f"{hemisphere}{degrees}-{decimal_degrees}"
