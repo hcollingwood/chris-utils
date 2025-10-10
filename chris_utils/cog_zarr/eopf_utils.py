@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import datetime, timedelta
 
 import eopf.common.constants as constants
 from eopf import EOConfiguration
@@ -41,7 +42,9 @@ def _radiance_units(envi_header: dict, root_attrs: dict) -> str | None:
     )
 
 
-def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
+def _build_eopf_product(
+    da, envi_header, hdr_txt_path, product_name=None, product_format: str | None = None
+):
     """
     Build and return an EOProduct populated with:
       - Groups
@@ -53,7 +56,35 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     # parse CHRIS metadata & EOPF root attrs
     chris_meta = parse_chris_hdr_txt(hdr_txt_path)
     root_attrs = build_eopf_root_attrs(chris_meta, hdr_txt_path)
+    _meta_with_table = parse_chris_hdr_txt(
+        hdr_txt_path, keep_spectral_table=True, keep_gain_table=True
+    )
 
+    # Derive start/end datetime from centre time, mode and number of lines
+    centre_iso = root_attrs.get("datetime")  # ISO centre time
+    # Mode (int): "CHRIS Mode" in txt, else None
+    mode_txt = _norm_keys(chris_meta).get("chris mode")
+    try:
+        _mode_num = int(mode_txt)
+    except (TypeError, ValueError):
+        _mode_num = None
+    # Line integration time (μs): M1=4.2, M2–M5=2.1
+    _lit_us = 4.2 if _mode_num == 1 else 2.1
+    # Number of lines: prefer txt (“No of Ground Lines”), else ENVI "lines"
+    try:
+        _n_lines = int(chris_meta.get("No of Ground Lines") or envi_header.get("lines") or 0)
+    except Exception:
+        _n_lines = 0
+    _start_iso = _end_iso = None
+    if centre_iso and _n_lines > 0:
+        try:
+            _centre_dt = datetime.strptime(centre_iso, "%Y-%m-%dT%H:%M:%SZ")
+            _duration_s = (_n_lines * _lit_us) / 1e6
+            _half = timedelta(seconds=_duration_s / 2.0)
+            _start_iso = (_centre_dt - _half).strftime("%Y-%m-%dT%H:%M:%SZ")
+            _end_iso = (_centre_dt + _half).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            pass
     # determine GSD (18 or 36)
     gsd = _gsd_from_mode(chris_meta)
     logging.info(f"CHRIS operating in mode {gsd}")
@@ -98,20 +129,80 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
     # minimal STAC discovery
     props = {
         "product:type": root_attrs.get("product_type"),
-        "start_datetime": root_attrs.get("datetime"),
         "platform": root_attrs.get("platform"),
         "instrument": root_attrs.get("instrument"),
     }
+    # DO NOT ADD start/end/centre yet; waiting for precise spreadsheet
+    # if _start_iso:
+    #     props["start_datetime"] = _start_iso
+    # if _end_iso:
+    #     props["end_datetime"] = _end_iso
+    # if centre_iso:
+    #     props["centre_datetime"] = centre_iso
     product.attrs["stac_discovery"] = {"properties": props}
 
     # merge ENVI header + EOPF root attrs
     product.attrs.update(envi_header)
     product.attrs.update(root_attrs)
 
+    # Attach spectral table (WLLOW/WLHIGH/...)
+    if table := _meta_with_table.get("spectral_table"):
+        product.attrs["spectral_table"] = table
+
+    if gains := _meta_with_table.get("gain_table"):
+        product.attrs["gain_table"] = gains
+
+    product.attrs.pop("wavelength", None)
+
     # product-level measurement
     product.attrs["measurement"] = "radiance"
     if units:
         product.attrs["measurement:units"] = units
+
+    # Authoritative band count after any plane drop/selection
+    product.attrs["bands"] = int(da.sizes["band"])
+
+    # Container-aware replacements and cleanup
+    if product_format:
+        # Explicitly declare container type and data layout
+        pf = product_format.upper()
+        product.attrs["file_type"] = "COG" if pf == "COG" else "ZARR"
+        product.attrs["dtype"] = str(da.dtype)
+        product.attrs["bit_depth"] = 10
+        try:
+            product.attrs["product_bit_depth"] = int(getattr(da.dtype, "itemsize", 0) * 8)
+        except Exception:
+            pass
+
+    # Remove ENVI-only / redundant keys if present (avoid duplication)
+    for k in (
+        "sensor type",
+        "header offset",
+        "byte order",
+        "file type",
+        "data type",
+        "chris_no_of_bands_followed_by_band_position_of_smear",
+        "product_type",
+        "platform",
+        "instrument",
+        "datetime",  # kept in stac_discovery
+        "chris_sensor_type",
+        "chris_mask_key_information",
+        "chris_image_date_yyyy_mm_dd_",
+        "chris_gain_setting",
+        "chris_calculated_image_centre_time",
+        "chris_no_of_samples",
+        "chris_no_of_ground_lines",
+        "chris_longitude",
+        "chris_lattitude",
+    ):
+        product.attrs.pop(k, None)
+
+    # Normalize a couple of CHRIS txt keys
+    if "chris_statement_of_data_rights" in product.attrs:
+        product.attrs["data_rights"] = product.attrs.pop("chris_statement_of_data_rights")
+    if "chris_target_name" in product.attrs:
+        product.attrs["target_name"] = product.attrs.pop("chris_target_name")
 
     return product, base
 
@@ -119,7 +210,9 @@ def _build_eopf_product(da, envi_header, hdr_txt_path, product_name=None):
 def write_eopf_zarr(da, envi_header, hdr_txt_path, out_zarr_path):
     """Write an EOPF-compliant Zarr store."""
     product_name = os.path.splitext(os.path.basename(out_zarr_path))[0]
-    product, _ = _build_eopf_product(da, envi_header, hdr_txt_path, product_name)
+    product, _ = _build_eopf_product(
+        da, envi_header, hdr_txt_path, product_name, product_format="ZARR"
+    )
 
     parent, leaf = os.path.split(out_zarr_path)
     os.makedirs(parent or ".", exist_ok=True)
@@ -132,7 +225,9 @@ def write_eopf_cog(da, envi_header, hdr_txt_path, out_cog_dir):
     """Write an EOPF-compliant COG directory (ending in .cog)."""
     # Build the EOProduct and determine the resolution group
     product_name = os.path.splitext(os.path.basename(out_cog_dir))[0]
-    product, base = _build_eopf_product(da, envi_header, hdr_txt_path, product_name)
+    product, base = _build_eopf_product(
+        da, envi_header, hdr_txt_path, product_name, product_format="COG"
+    )
 
     # Ensure the output .cog directory exists
     os.makedirs(out_cog_dir, exist_ok=True)
