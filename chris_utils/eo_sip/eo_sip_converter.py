@@ -410,7 +410,9 @@ def format_longitude(raw: str) -> str:
         raw_degrees = raw_degrees[1:]
     else:
         hemisphere = "E"
-    degrees = f"{raw_degrees:03}"
+    raw_degrees = '12'
+    degrees = f"{int(raw_degrees):03}"
+
     decimal_degrees = f"{decimal_degrees:03}"
 
     return f"{hemisphere}{degrees}-{decimal_degrees}"
