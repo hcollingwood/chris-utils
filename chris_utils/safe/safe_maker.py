@@ -217,7 +217,7 @@ def make_safe(
                     zip = zipfile.ZipFile(path)
                     zip.extractall(path=f"/tmp/{os.path.splitext(path)[0]}")
 
-                    for dirpath, dirnames, filenames in os.walk(
+                    for dirpath, _, filenames in os.walk(
                         f"/tmp/{os.path.splitext(path)[0]}"
                     ):
                         for filename in filenames:
