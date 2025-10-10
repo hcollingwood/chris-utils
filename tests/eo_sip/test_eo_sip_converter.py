@@ -1,9 +1,17 @@
+import copy
+import os
+import tempfile
+import zipfile
+
 import pytest
 
 from chris_utils.eo_sip.eo_sip_converter import (
+    Data,
     do_metadata_check,
     format_latitude,
     format_longitude,
+    identify_centre_image,
+    zip_directory,
 )
 
 
@@ -129,3 +137,82 @@ def test_format_longitude__pass(raw, expected_format):
 
     formatted = format_longitude(raw)
     assert formatted == expected_format
+
+
+def test_identify_centre_image__all_present(mock_metadata):
+    all_data = []
+    for i in range(1, 6):
+        temp_metadata = copy.deepcopy(mock_metadata)
+        temp_metadata["chris_image_no_x_of_y"] = f"{i} of 5"
+        all_data.append(Data(raw_metadata=temp_metadata, file_data=None, raw_data=None, image=None))
+
+    centre_metadata = identify_centre_image(all_data)
+
+    assert centre_metadata.raw_metadata["chris_image_no_x_of_y"] == "1 of 5"
+
+
+def test_identify_centre_image__missing_one(mock_metadata):
+    all_data = []
+    for i in range(2, 6):
+        temp_metadata = copy.deepcopy(mock_metadata)
+        temp_metadata["chris_image_no_x_of_y"] = f"{i} of 5"
+        all_data.append(Data(raw_metadata=temp_metadata, file_data=None, raw_data=None, image=None))
+
+    centre_metadata = identify_centre_image(all_data)
+
+    assert centre_metadata.raw_metadata["chris_image_no_x_of_y"] == "2 of 5"
+
+
+def test_identify_centre_image__missing_two(mock_metadata):
+    all_data = []
+    for i in range(3, 6):
+        temp_metadata = copy.deepcopy(mock_metadata)
+        temp_metadata["chris_image_no_x_of_y"] = f"{i} of 5"
+        all_data.append(Data(raw_metadata=temp_metadata, file_data=None, raw_data=None, image=None))
+
+    centre_metadata = identify_centre_image(all_data)
+
+    assert centre_metadata.raw_metadata["chris_image_no_x_of_y"] == "3 of 5"
+
+
+def test_identify_centre_image__duplicates(mock_metadata):
+    all_data = []
+    for _ in range(2, 6):
+        temp_metadata = copy.deepcopy(mock_metadata)
+        temp_metadata["chris_image_no_x_of_y"] = "1 of 5"
+        all_data.append(Data(raw_metadata=temp_metadata, file_data=None, raw_data=None, image=None))
+
+    centre_metadata = identify_centre_image(all_data)
+
+    assert centre_metadata.raw_metadata["chris_image_no_x_of_y"] == "1 of 5"
+
+
+def test_zip_directory():
+    with tempfile.TemporaryDirectory() as tempdir1, tempfile.TemporaryDirectory() as tempdir2:
+        if not os.path.exists(tempdir1):
+            os.makedirs(tempdir1)
+        if not os.path.exists(tempdir2):
+            os.makedirs(tempdir2)
+
+        for i in range(5):
+            output_dir = f"{tempdir1}/outputs{i}"
+            os.makedirs(output_dir)
+            with open(f"{output_dir}/file{i}.txt", "w") as f:
+                f.write(str(i) * 100)
+
+        assert len(os.listdir(tempdir1)) == 5
+
+        zip_name = "folder contents"
+        folder_dir = tempdir1
+        with zipfile.ZipFile(f"{tempdir2}/output.zip", "w") as zip_file:
+            zip_directory(folder_dir, zip_name, zip_file)
+
+        assert len(os.listdir(tempdir2)) == 1
+        assert "output.zip" in os.listdir(tempdir2)
+
+        with zipfile.ZipFile(f"{tempdir2}/output.zip", "r") as zip_file_outer:
+            zip_file_outer.extractall(tempdir2)
+
+        assert len(os.listdir(f"{tempdir2}/{zip_name}")) == 5
+        for item in os.listdir(f"{tempdir2}/{zip_name}"):
+            assert os.path.isdir(f"{tempdir2}/{zip_name}/{item}")

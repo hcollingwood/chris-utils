@@ -23,6 +23,14 @@ def get_list_of_files(inputs: list) -> list[str]:
                 for file in os.listdir(i):
                     item_path = os.path.join(i, file)
                     process_input(item_path)
+        # if i.lower().endswith('.zip'):
+        #     with zipfile.ZipFile(i, 'r') as zip:
+        #         zip.extractall(tempdir)
+        #         print('xzxxxxxxxxxxx')
+        #         valid_files = get_list_of_files([tempdir])
+        #         files_for_eosip.extend([tempdir + '/' + f for f in valid_files])
+        #         print(files_for_eosip)
+
         else:
             logging.error(error_message, i)
 
