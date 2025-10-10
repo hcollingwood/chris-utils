@@ -551,14 +551,14 @@ def convert_eo_sip(
     if not os.path.exists(output):
         os.makedirs(output)
 
-    all_file_data = []
-
     if extras and os.path.isdir(extras) and extras.endswith(".SAFE"):
         logging.info("Generating SAFE EO-SIP")
         safe = True
 
     debug_dir = "debug"
     for folder in inputs.split(","):
+        all_file_data = []
+
         files = get_list_of_files([folder])
         with tempfile.TemporaryDirectory() as tempdir:
             staging_dir = debug_dir if debug else tempdir
