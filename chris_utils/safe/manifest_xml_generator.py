@@ -38,6 +38,7 @@ class DataObject(BaseXmlModel, tag="dataObject"):
     rep_id: str = attr(name="repID")
     byte_stream: ByteStream
 
+
 class MeasurementSchema(BaseXmlModel, tag="measurementSchema"):
     data_objects: list[DataObject]
 
@@ -122,7 +123,7 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
                     text_info, data_object_id, rep_id = file_info[file_extension]
                 except KeyError:
                     text_info, data_object_id, rep_id = file_info["measurement"]
-                    measurement_type = file_name.split(".")[0].split('-')[-1]
+                    measurement_type = file_name.split(".")[0].split("-")[-1]
                     data_object_id = f"{data_object_id}{measurement_type.title()}"
 
                 if data_object_id is None:
@@ -181,7 +182,9 @@ class XFDU(BaseXmlModel, nsmap=namespaces, ns="xfdu"):
         information_package_map = InformationPackageMap(content_unit=content_unit_outer)
         metadata_section = MetadataSection(metadata_objects=[metadata_object])
 
-        data_object_section = DataObjectSection(measurement_schema=MeasurementSchema(data_objects=data_object_list))
+        data_object_section = DataObjectSection(
+            measurement_schema=MeasurementSchema(data_objects=data_object_list)
+        )
 
         super().__init__(
             version=version,

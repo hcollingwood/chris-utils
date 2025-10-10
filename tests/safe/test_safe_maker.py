@@ -81,7 +81,7 @@ def test_generate_file_name__failure_wrong_type(mock_metadata):
 
 def test_make_safe__success():
     input_file_name = "myfile.txt"  # only important part here is the .txt extension
-    expected_file_name = "CHRIS_20040411T181816_0001_RPI-BAS_82A3.SAFE"
+    expected_file_name = "CHRIS_20040411T181816_0001_RPI-BAS_F65D.SAFE"
     with tempfile.TemporaryDirectory() as tempdir:
         with open(tempdir + "/" + input_file_name, "w") as f:
             f.write(
@@ -132,8 +132,7 @@ def test_make_safe__failure_file_type_not_recognised(caplog):
 
             all_files = os.listdir(tempdir)
             assert len(all_files) == 2  # original file and SAFE package
-            print(os.listdir(tempdir))
-            safe_path = f"{tempdir}/CHRIS_20040411T181816_0001_RPI-BAS_F6AD.SAFE"
+            safe_path = f"{tempdir}/CHRIS_20040411T181816_0001_RPI-BAS_C3B0.SAFE"
             assert len(os.listdir(safe_path)) == 2  # manifest and measurement folder
 
             assert "Schema for nottxt not found" in caplog.text

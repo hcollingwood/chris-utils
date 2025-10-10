@@ -145,7 +145,7 @@ def clean_metadata(metadata):
     cleaned_metadata = {}
     for key in metadata:
         if isinstance(metadata[key], str):
-            if not metadata[key].startswith('$'):
+            if not metadata[key].startswith("$"):
                 cleaned_metadata[key] = metadata[key]
         else:
             cleaned_metadata[key] = metadata[key]
@@ -203,21 +203,23 @@ def make_safe(
             metadata = {}
             for path in paths:
                 file_type = os.path.splitext(path)[1][1:].lower()
-                file_name = path.replace(file, '')
-                if not file_name.startswith('/'):
-                    file_name = file_name + '/'
+                file_name = path.replace(file, "")
+                if not file_name.startswith("/"):
+                    file_name = file_name + "/"
 
                 output_dat_path = f"{measurement_dir}{file_name}"
-                output_dat_folder_path = output_dat_path.rsplit('/', 1)[0]
+                output_dat_folder_path = output_dat_path.rsplit("/", 1)[0]
                 os.makedirs(output_dat_folder_path, exist_ok=True)
                 shutil.copy(path, output_dat_path)
                 file_types.add(file_type)
 
-                if file_type == 'zip':
+                if file_type == "zip":
                     zip = zipfile.ZipFile(path)
-                    zip.extractall(path=f'/tmp/{os.path.splitext(path)[0]}')
+                    zip.extractall(path=f"/tmp/{os.path.splitext(path)[0]}")
 
-                    for (dirpath, dirnames, filenames) in os.walk(f'/tmp/{os.path.splitext(path)[0]}'):
+                    for dirpath, dirnames, filenames in os.walk(
+                        f"/tmp/{os.path.splitext(path)[0]}"
+                    ):
                         for filename in filenames:
                             file_type = os.path.splitext(filename)[1][1:].lower()
                             zipped_file_types.add(file_type)

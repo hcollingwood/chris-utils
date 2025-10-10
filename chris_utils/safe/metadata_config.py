@@ -260,9 +260,7 @@ def zip_schema():
             name="zip",
             type="zipType",
             annotation=Annotation(
-                documentation=Documentation(
-                    lang="en", value="The file contains the following: ."
-                ),
+                documentation=Documentation(lang="en", value="The file contains the following: ."),
                 app_info=AppInfo(
                     block=Block(
                         encoding=BlockEncoding(value="BINARY"),
