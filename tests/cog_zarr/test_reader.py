@@ -224,3 +224,68 @@ def test_size_mismatch_raises(tmp_path, write_envi_header, write_rci, make_cube_
 
     with pytest.raises(ValueError, match="File size .* != expected .*"):
         _ = RCIReader(str(rci), str(hdr))
+
+
+@pytest.fixture
+def tiny_bsq(tmp_path):
+    # 2 bands, 3x4, simple BSQ file with int16
+    bands, lines, samples = 2, 3, 4
+    arr = np.arange(bands * lines * samples, dtype=np.int16).reshape(bands, lines, samples)
+
+    # write .rci (BSQ) and .hdr
+    rci = tmp_path / "img.rci"
+    rci.write_bytes(arr.tobytes(order="C"))
+
+    hdr = tmp_path / "img.hdr"
+    hdr.write_text(
+        "ENVI\n"
+        "samples = 4\n"
+        "lines = 3\n"
+        "bands = 2\n"
+        "header offset = 0\n"
+        "file type = ENVI Standard\n"
+        "data type = 2\n"  # int16
+        "interleave = bsq\n"
+        "byte order = 0\n"
+        "wavelength = {500.0,600.0}\n",
+        encoding="utf-8",
+    )
+    return str(rci), str(hdr)
+
+
+def test_reader_sets_spatial_attrs_from_hdr_txt(monkeypatch, tiny_bsq):
+    rci, hdr = tiny_bsq
+
+    # Monkeypatch helper used by reader to avoid real hdr.txt content
+    from chris_utils.cog_zarr import reader as reader_mod
+
+    def fake_extract(_meta):
+        # Return lon/lat near UTM 12N, gsd=18m
+        return (-110.54, 31.60, 18.0)
+
+    monkeypatch.setattr(reader_mod, "geo_extract_center_lat_lon_gsd", fake_extract, raising=True)
+
+    # Also short-circuit parse_chris_hdr_txt usage to not read a file
+    def fake_parse(_):
+        return {"Image Date (yyyy-mm-dd)": "2004-04-11"}
+
+    monkeypatch.setattr(reader_mod, "parse_chris_hdr_txt", fake_parse, raising=True)
+
+    reader = RCIReader(rci, hdr, hdr_txt_path="dummy.hdr.txt")
+    da = reader.read()
+
+    # spatial attributes were set
+    assert "spatial_ref" in da.attrs and da.attrs["spatial_ref"].startswith("EPSG:")
+    assert "GeoTransform" in da.attrs
+    # x/y coords should be float (UTM meters style)
+    assert da["x"].dtype.kind == "f"
+    assert da["y"].dtype.kind == "f"
+
+
+def test_reader_no_hdr_txt_keeps_pixel_coords(tiny_bsq):
+    rci, hdr = tiny_bsq
+    reader = RCIReader(rci, hdr)  # no hdr_txt_path
+    da = reader.read()
+    # x/y are pixel indices
+    np.testing.assert_array_equal(da["x"].values, np.arange(4))
+    np.testing.assert_array_equal(da["y"].values, np.arange(3))
