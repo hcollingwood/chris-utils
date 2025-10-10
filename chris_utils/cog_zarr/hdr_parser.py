@@ -40,22 +40,16 @@ def parse_chris_hdr_txt(
                 text = raw.lstrip("/").strip()
 
                 # detect start of spectral table
-                if text.upper().startswith("WLLOW"):
+                if keep_spectral_table and text.upper().startswith("WLLOW"):
                     in_table = True
-                    if keep_spectral_table:
-                        columns = re.split(r"\s+", text)
+                    columns = re.split(r"\s+", text)
                     continue
 
                 # once we're in the table, collect rows until non-table
-                if in_table and keep_spectral_table:
+                if in_table:
                     row_vals = re.split(r"\s+", text)
-                    # only add if same length as header
                     if len(row_vals) == len(columns):
                         spectral_rows.append(dict(zip(columns, row_vals, strict=False)))
-                    continue
-
-                # if not keeping the table, skip it
-                if in_table and not keep_spectral_table:
                     continue
 
                 # gain table header
@@ -84,29 +78,24 @@ def parse_chris_hdr_txt(
                     meta[last_key] = raw.strip()
                     last_key = None
                 # or if in the table and keeping it, collect data
-                elif in_table and keep_spectral_table and raw.strip():
+                elif in_table and raw.strip():
                     row_vals = re.split(r"\s+", raw.strip())
                     if len(row_vals) == len(columns):
                         spectral_rows.append(dict(zip(columns, row_vals, strict=False)))
-                elif in_gain and keep_gain_table:
-                    raw2 = raw.strip()
-                    # empty or next section ends the gain block
-                    if not raw2 or raw2.startswith("//"):
+                elif in_gain:
+                    raw_no_whitespace = raw.strip()
+                    if not raw_no_whitespace or raw_no_whitespace.startswith("//"):
                         in_gain = False
                     else:
-                        parts = re.split(r"\s+", raw2)
+                        parts = re.split(r"\s+", raw_no_whitespace)
                         if len(parts) >= 2 and parts[0].isdigit():
                             try:
                                 gain_rows.append(
-                                    {
-                                        "setting": int(parts[0]),
-                                        "value": float(parts[1]),
-                                    }
+                                    {"setting": int(parts[0]), "value": float(parts[1])}
                                 )
                             except Exception:
                                 pass
                         else:
-                            # first line that doesn't look like a gain row ends the block
                             in_gain = False
 
     # attach spectral table if we collected it
